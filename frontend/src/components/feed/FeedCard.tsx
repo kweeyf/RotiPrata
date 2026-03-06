@@ -207,23 +207,6 @@ export function FeedCard({
     !isPaused &&
     !isPlaybackBlocked;
 
-  const getCategoryBadgeClass = (type?: string) => {
-    switch (type) {
-      case 'slang':
-        return 'badge-slang';
-      case 'meme':
-        return 'badge-meme';
-      case 'dance_trend':
-        return 'badge-dance';
-      case 'social_practice':
-        return 'badge-social';
-      case 'cultural_reference':
-        return 'badge-cultural';
-      default:
-        return 'bg-muted text-muted-foreground';
-    }
-  };
-
   const renderBackgroundMedia = () => {
     const streamUrl = content.stream_url ?? content.media_url;
     if (content.content_type === 'video' && streamUrl) {
@@ -232,7 +215,7 @@ export function FeedCard({
           <FeedVideoPlayer
             sourceUrl={streamUrl}
             showPoster={false}
-            className="w-full h-full object-contain"
+            className="w-full h-full object-contain object-center"
             preload={preload}
             isActive={isActive}
             isPaused={isPaused}
@@ -245,7 +228,7 @@ export function FeedCard({
         );
       }
       return (
-        <div className="w-full h-full bg-mainDark dark:bg-black relative overflow-hidden">
+        <div className="w-full h-full bg-black relative overflow-hidden">
           <div className="absolute inset-0 animate-pulse bg-gradient-to-b from-white/5 via-transparent to-white/5" />
         </div>
       );
@@ -265,7 +248,7 @@ export function FeedCard({
   return (
     <div className="relative w-full h-full snap-start">
       <div
-        className="absolute inset-0 bg-mainDark dark:bg-black flex items-center justify-center overflow-hidden"
+        className="absolute inset-0 bg-black flex items-center justify-center overflow-hidden"
         onClick={handleMediaClick}
         onDoubleClick={handleMediaDoubleClick}
         onTouchEnd={handleMediaTouchEnd}
@@ -322,7 +305,7 @@ export function FeedCard({
 
       <button
         onClick={onLearnMoreClick}
-        className="absolute right-4 top-1/2 -translate-y-1/2 flex items-center gap-2 text-mainAccent/70 hover:text-mainAccent dark:text-white/70 dark:hover:text-white transition-colors touch-target"
+        className="absolute right-4 top-1/2 -translate-y-1/2 flex items-center gap-2 text-white/80 hover:text-white/80 transition-colors touch-target"
       >
         <span className="text-sm font-medium">Learn more</span>
         <ChevronLeft className="h-5 w-5 rotate-180" />
@@ -330,18 +313,18 @@ export function FeedCard({
 
       <div className="absolute bottom-0 left-0 right-16 p-4 pb-8 pointer-events-none">
         {content.category && (
-          <Badge className={cn('mb-3', getCategoryBadgeClass(content.category.type))}>
+          <Badge className="mb-3 bg-black/35 text-white/80">
             {content.category.name}
           </Badge>
         )}
 
-        <h2 className="text-xl font-bold text-mainAccent dark:text-white mb-2 line-clamp-2">{content.title}</h2>
+        <h2 className="text-xl font-bold text-white/80 mb-2 line-clamp-2">{content.title}</h2>
 
         {content.learning_objective && (
           <div className="flex items-center gap-2 mb-3">
             <Badge
               variant="secondary"
-              className="bg-mainAlt/80 text-mainAccent border border-mainAlt/70 dark:bg-white/20 dark:text-white dark:border-0"
+              className="bg-black/35 text-white/80"
             >
               Learn: {content.learning_objective}
             </Badge>
@@ -349,11 +332,11 @@ export function FeedCard({
         )}
 
         {content.description && (
-          <p className="text-mainAccent/80 dark:text-white/80 text-sm line-clamp-2 mb-3">{content.description}</p>
+          <p className="text-white/80 text-sm line-clamp-2 mb-3">{content.description}</p>
         )}
 
         <div className="flex items-center gap-2">
-          <div className="w-8 h-8 rounded-full bg-mainAlt/85 dark:bg-white/20 flex items-center justify-center overflow-hidden">
+          <div className="w-8 h-8 rounded-full bg-black/35 flex items-center justify-center overflow-hidden">
             {content.creator?.avatar_url ? (
               <img
                 src={content.creator.avatar_url}
@@ -361,10 +344,10 @@ export function FeedCard({
                 className="w-full h-full object-cover"
               />
             ) : (
-              <span className="text-sm">User</span>
+              <span className="text-sm text-white/80">User</span>
             )}
           </div>
-          <span className="text-mainAccent/80 dark:text-white/80 text-sm font-medium">
+          <span className="text-white/80 text-sm font-medium">
             @{content.creator?.display_name || 'anonymous'}
           </span>
         </div>
@@ -372,8 +355,8 @@ export function FeedCard({
 
       <div className="absolute right-4 bottom-24 flex flex-col items-center gap-4">
         {showEdit && onEdit && (
-          <button onClick={onEdit} className="flex flex-col items-center gap-1 text-mainAccent dark:text-white touch-target">
-            <div className="w-12 h-12 rounded-full bg-primary/30 backdrop-blur-sm flex items-center justify-center hover:bg-primary/45 transition-colors">
+          <button onClick={onEdit} className="flex flex-col items-center gap-1 text-white/80 hover:text-white/80 touch-target">
+            <div className="w-12 h-12 rounded-full bg-black/35 backdrop-blur-sm flex items-center justify-center transition-colors">
               <FilePenLine className="h-6 w-6" />
             </div>
             <span className="text-xs font-medium">Edit</span>
@@ -384,9 +367,9 @@ export function FeedCard({
           <button
             onClick={onTakeDown}
             disabled={isTakingDown}
-            className="flex flex-col items-center gap-1 text-mainAccent dark:text-white touch-target disabled:opacity-60 disabled:cursor-not-allowed"
+            className="flex flex-col items-center gap-1 text-white/80 hover:text-white/80 touch-target disabled:opacity-60 disabled:cursor-not-allowed"
           >
-            <div className="w-12 h-12 rounded-full bg-destructive/40 backdrop-blur-sm flex items-center justify-center hover:bg-destructive/55 transition-colors">
+            <div className="w-12 h-12 rounded-full bg-black/35 backdrop-blur-sm flex items-center justify-center transition-colors">
               <ShieldOff className="h-6 w-6" />
             </div>
             <span className="text-xs font-medium">{isTakingDown ? '...' : 'Take down'}</span>
@@ -396,9 +379,9 @@ export function FeedCard({
         {onQuizClick && (
           <button
             onClick={onQuizClick}
-            className="flex flex-col items-center gap-1 text-mainAccent dark:text-white touch-target"
+            className="flex flex-col items-center gap-1 text-white/80 hover:text-white/80 touch-target"
           >
-            <div className="w-12 h-12 rounded-full bg-mainAlt/85 dark:bg-white/20 backdrop-blur-sm flex items-center justify-center hover:bg-mainAlt dark:hover:bg-white/30 transition-colors">
+            <div className="w-12 h-12 rounded-full bg-black/35 backdrop-blur-sm flex items-center justify-center transition-colors">
               <BookOpen className="h-6 w-6" />
             </div>
             <span className="text-xs font-medium">Quiz</span>
@@ -408,19 +391,19 @@ export function FeedCard({
         <button
           onClick={handleLike}
           disabled={isLikePending}
-          className="flex flex-col items-center gap-1 text-mainAccent dark:text-white touch-target disabled:opacity-60 disabled:cursor-not-allowed"
+          className="flex flex-col items-center gap-1 text-white/80 hover:text-white/80 touch-target disabled:opacity-60 disabled:cursor-not-allowed"
         >
-          <div className="w-12 h-12 rounded-full bg-mainAlt/85 dark:bg-white/20 backdrop-blur-sm flex items-center justify-center hover:bg-mainAlt dark:hover:bg-white/30 transition-colors">
-            <Heart className={cn('h-6 w-6 transition-colors', isLiked && 'fill-red-500 text-red-500')} />
+          <div className="w-12 h-12 rounded-full bg-black/35 backdrop-blur-sm flex items-center justify-center transition-colors">
+            <Heart className={cn('h-6 w-6 transition-colors', isLiked && 'fill-current')} />
           </div>
           <span className="text-xs font-medium">{likeCount}</span>
         </button>
 
         <button
           onClick={onCommentClick}
-          className="flex flex-col items-center gap-1 text-mainAccent dark:text-white touch-target"
+          className="flex flex-col items-center gap-1 text-white/80 hover:text-white/80 touch-target"
         >
-          <div className="w-12 h-12 rounded-full bg-mainAlt/85 dark:bg-white/20 backdrop-blur-sm flex items-center justify-center hover:bg-mainAlt dark:hover:bg-white/30 transition-colors">
+          <div className="w-12 h-12 rounded-full bg-black/35 backdrop-blur-sm flex items-center justify-center transition-colors">
             <MessageCircle className="h-6 w-6" />
           </div>
           <span className="text-xs font-medium">{commentCount}</span>
@@ -429,12 +412,11 @@ export function FeedCard({
         <button
           onClick={onSave}
           disabled={isSavePending}
-          className="flex flex-col items-center gap-1 text-mainAccent dark:text-white touch-target disabled:opacity-60 disabled:cursor-not-allowed"
+          className="flex flex-col items-center gap-1 text-white/80 hover:text-white/80 touch-target disabled:opacity-60 disabled:cursor-not-allowed"
         >
           <div
             className={cn(
-              'w-12 h-12 rounded-full backdrop-blur-sm flex items-center justify-center transition-colors',
-              isSaved ? 'bg-primary text-white hover:bg-primary/85' : 'bg-mainAlt/85 dark:bg-white/20 hover:bg-mainAlt dark:hover:bg-white/30'
+              'w-12 h-12 rounded-full backdrop-blur-sm flex items-center justify-center transition-colors bg-black/35'
             )}
           >
             <Bookmark className={cn('h-6 w-6', isSaved && 'fill-current')} />
@@ -442,8 +424,8 @@ export function FeedCard({
           <span className="text-xs font-medium">{isSaved ? 'Saved' : 'Save'}</span>
         </button>
 
-        <button onClick={onShare} className="flex flex-col items-center gap-1 text-mainAccent dark:text-white touch-target">
-          <div className="w-12 h-12 rounded-full bg-mainAlt/85 dark:bg-white/20 backdrop-blur-sm flex items-center justify-center hover:bg-mainAlt dark:hover:bg-white/30 transition-colors">
+        <button onClick={onShare} className="flex flex-col items-center gap-1 text-white/80 hover:text-white/80 touch-target">
+          <div className="w-12 h-12 rounded-full bg-black/35 backdrop-blur-sm flex items-center justify-center transition-colors">
             <Share2 className="h-6 w-6" />
           </div>
           <span className="text-xs font-medium">Share</span>
@@ -451,9 +433,9 @@ export function FeedCard({
 
         <button
           onClick={onFlag}
-          className="flex flex-col items-center gap-1 text-mainAccent/60 hover:text-mainAccent dark:text-white/60 dark:hover:text-white touch-target"
+          className="flex flex-col items-center gap-1 text-white/80 hover:text-white/80 touch-target"
         >
-          <div className="w-10 h-10 rounded-full bg-mainAlt/70 dark:bg-white/10 backdrop-blur-sm flex items-center justify-center hover:bg-mainAlt dark:hover:bg-white/20 transition-colors">
+          <div className="w-10 h-10 rounded-full bg-black/35 backdrop-blur-sm flex items-center justify-center transition-colors">
             <Flag className="h-4 w-4" />
           </div>
         </button>

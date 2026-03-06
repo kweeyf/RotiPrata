@@ -59,7 +59,7 @@ export function FeedContainer({
   const navigate = useNavigate();
   const location = useLocation();
   const containerHeightClass =
-    'h-[calc(100vh-var(--bottom-nav-height)-var(--safe-area-bottom))] md:h-[calc(100vh-4rem)]';
+    'h-[calc(100dvh-var(--bottom-nav-height)-var(--safe-area-bottom))] md:h-[calc(100dvh-4rem)]';
   const [hiddenContentIds, setHiddenContentIds] = useState<Set<string>>(() => new Set());
   const [takingDownContentId, setTakingDownContentId] = useState<string | null>(null);
   const [activeIndex, setActiveIndex] = useState(initialIndex);
