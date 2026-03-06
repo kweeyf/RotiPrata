@@ -14,12 +14,16 @@ import {
 import { cn } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
 import type { Content } from '@/types';
+import { FeedVideoPlayer, type FeedVideoPlaybackMetrics, type FeedVideoPreload } from './FeedVideoPlayer';
 
 interface FeedCardProps {
   content: Content;
   isActive?: boolean;
   shouldMountMedia?: boolean;
+  preload?: FeedVideoPreload;
+  shouldAutoplay?: boolean;
   isPaused?: boolean;
+  isPlaybackBlocked?: boolean;
   isSaved?: boolean;
   isLikePending?: boolean;
   isSavePending?: boolean;
@@ -35,6 +39,9 @@ interface FeedCardProps {
   onQuizClick?: () => void;
   onTogglePlayback?: () => void;
   onPlaybackBlocked?: () => void;
+  onPlaybackStarted?: () => void;
+  onPlaybackMetrics?: (metrics: FeedVideoPlaybackMetrics) => void;
+  onMediaInteraction?: () => void;
   showEdit?: boolean;
   onEdit?: () => void;
   showTakeDown?: boolean;
@@ -55,7 +62,10 @@ export function FeedCard({
   content,
   isActive = false,
   shouldMountMedia = true,
+  preload = 'metadata',
+  shouldAutoplay = true,
   isPaused = false,
+  isPlaybackBlocked = false,
   isSaved = false,
   isLikePending = false,
   isSavePending = false,
@@ -71,6 +81,9 @@ export function FeedCard({
   onQuizClick,
   onTogglePlayback,
   onPlaybackBlocked,
+  onPlaybackStarted,
+  onPlaybackMetrics,
+  onMediaInteraction,
   showEdit = false,
   onEdit,
   showTakeDown = false,
@@ -78,7 +91,7 @@ export function FeedCard({
   isTakingDown = false,
 }: FeedCardProps) {
   const [floatingHearts, setFloatingHearts] = useState<FloatingHeart[]>([]);
-  const videoRef = useRef<HTMLVideoElement | null>(null);
+  const [isBuffering, setIsBuffering] = useState(false);
   const lastTapRef = useRef(0);
   const singleTapTimerRef = useRef<number | null>(null);
 
@@ -96,48 +109,10 @@ export function FeedCard({
   }, []);
 
   useEffect(() => {
-    if (content.content_type !== 'video' || !shouldMountMedia) {
-      return;
+    if (!isActive || content.content_type !== 'video') {
+      setIsBuffering(false);
     }
-    const video = videoRef.current;
-    if (!video) {
-      return;
-    }
-    if (!isActive || isPaused) {
-      video.pause();
-      return;
-    }
-
-    let cancelled = false;
-    const playWithFallback = async () => {
-      try {
-        video.muted = false;
-        await video.play();
-        return;
-      } catch (_err) {
-        // Browser blocked unmuted autoplay; fallback to muted autoplay.
-      }
-
-      if (cancelled) {
-        return;
-      }
-
-      try {
-        video.muted = true;
-        await video.play();
-      } catch (_err) {
-        if (!cancelled) {
-          onPlaybackBlocked?.();
-        }
-      }
-    };
-
-    void playWithFallback();
-
-    return () => {
-      cancelled = true;
-    };
-  }, [content.content_type, isActive, isPaused, onPlaybackBlocked, shouldMountMedia]);
+  }, [content.content_type, isActive]);
 
   const addFloatingHearts = (x: number, y: number) => {
     const hearts = Array.from({ length: 6 }, (_, index) => ({
@@ -192,11 +167,13 @@ export function FeedCard({
     if (event.detail !== 1) {
       return;
     }
+    onMediaInteraction?.();
     scheduleSingleTapPlaybackToggle();
   };
 
   const handleMediaDoubleClick = (event: React.MouseEvent<HTMLDivElement>) => {
     clearSingleTapTimer();
+    onMediaInteraction?.();
     handleDoubleTapLike(event.clientX, event.clientY);
   };
 
@@ -206,6 +183,7 @@ export function FeedCard({
       return;
     }
 
+    onMediaInteraction?.();
     const now = Date.now();
     if (now - lastTapRef.current < 300) {
       clearSingleTapTimer();
@@ -217,7 +195,17 @@ export function FeedCard({
   };
 
   const showPausedOverlay =
-    content.content_type === 'video' && shouldMountMedia && isActive && isPaused;
+    content.content_type === 'video' &&
+    shouldMountMedia &&
+    isActive &&
+    (isPaused || isPlaybackBlocked);
+  const showBufferingOverlay =
+    content.content_type === 'video' &&
+    shouldMountMedia &&
+    isActive &&
+    isBuffering &&
+    !isPaused &&
+    !isPlaybackBlocked;
 
   const getCategoryBadgeClass = (type?: string) => {
     switch (type) {
@@ -237,32 +225,28 @@ export function FeedCard({
   };
 
   const renderBackgroundMedia = () => {
-    if (content.content_type === 'video' && content.media_url) {
+    const streamUrl = content.stream_url ?? content.media_url;
+    if (content.content_type === 'video' && streamUrl) {
       if (shouldMountMedia) {
         return (
-          <video
-            ref={videoRef}
-            src={content.media_url}
-            poster={content.thumbnail_url ?? undefined}
+          <FeedVideoPlayer
+            sourceUrl={streamUrl}
+            showPoster={false}
             className="w-full h-full object-contain"
-            loop
-            autoPlay={isActive && !isPaused}
-            playsInline
-          />
-        );
-      }
-      if (content.thumbnail_url) {
-        return (
-          <img
-            src={content.thumbnail_url}
-            alt={content.title}
-            className="w-full h-full object-cover"
+            preload={preload}
+            isActive={isActive}
+            isPaused={isPaused}
+            shouldAutoplay={shouldAutoplay}
+            onPlaybackBlocked={onPlaybackBlocked}
+            onPlaybackStarted={onPlaybackStarted}
+            onBufferingChange={setIsBuffering}
+            onPlaybackMetrics={onPlaybackMetrics}
           />
         );
       }
       return (
-        <div className="w-full h-full flex items-center justify-center gradient-primary">
-          <span className="text-6xl">Brain</span>
+        <div className="w-full h-full bg-mainDark dark:bg-black relative overflow-hidden">
+          <div className="absolute inset-0 animate-pulse bg-gradient-to-b from-white/5 via-transparent to-white/5" />
         </div>
       );
     }
@@ -311,6 +295,12 @@ export function FeedCard({
           <div className="h-16 w-16 rounded-full bg-black/45 backdrop-blur-sm shadow-xl flex items-center justify-center">
             <Play className="h-8 w-8 text-white fill-white translate-x-[1px]" />
           </div>
+        </div>
+      )}
+
+      {showBufferingOverlay && (
+        <div className="absolute inset-0 pointer-events-none flex items-center justify-center">
+          <div className="h-8 w-8 rounded-full border-2 border-white/25 border-t-white/90 animate-spin" />
         </div>
       )}
 
