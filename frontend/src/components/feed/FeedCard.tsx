@@ -393,8 +393,18 @@ export function FeedCard({
           disabled={isLikePending}
           className="flex flex-col items-center gap-1 text-white/80 hover:text-white/80 touch-target disabled:opacity-60 disabled:cursor-not-allowed"
         >
-          <div className="w-12 h-12 rounded-full bg-black/35 backdrop-blur-sm flex items-center justify-center transition-colors">
-            <Heart className={cn('h-6 w-6 transition-colors', isLiked && 'fill-current')} />
+          <div
+            className={cn(
+              'w-12 h-12 rounded-full backdrop-blur-sm flex items-center justify-center transition-colors',
+              isLiked ? 'bg-red-500/20' : 'bg-black/35'
+            )}
+          >
+            <Heart
+              className={cn(
+                'h-6 w-6 transition-colors',
+                isLiked ? 'fill-red-500 text-red-500' : 'text-white/80'
+              )}
+            />
           </div>
           <span className="text-xs font-medium">{likeCount}</span>
         </button>
@@ -416,10 +426,16 @@ export function FeedCard({
         >
           <div
             className={cn(
-              'w-12 h-12 rounded-full backdrop-blur-sm flex items-center justify-center transition-colors bg-black/35'
+              'w-12 h-12 rounded-full backdrop-blur-sm flex items-center justify-center transition-colors',
+              isSaved ? 'bg-amber-400/20' : 'bg-black/35'
             )}
           >
-            <Bookmark className={cn('h-6 w-6', isSaved && 'fill-current')} />
+            <Bookmark
+              className={cn(
+                'h-6 w-6 transition-colors',
+                isSaved ? 'fill-amber-400 text-amber-400' : 'text-white/80'
+              )}
+            />
           </div>
           <span className="text-xs font-medium">{isSaved ? 'Saved' : 'Save'}</span>
         </button>
