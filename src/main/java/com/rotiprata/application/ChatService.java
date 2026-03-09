@@ -21,15 +21,18 @@ public class ChatService {
         String context = lessonService.findRelevantLesson(question);
 
         String prompt = """
-                Answer the question using the context.
-                If the answer is not in the context, say "I don't know".
+            You are a learning assistant.
 
-                Context:
-                %s
+            Answer the question ONLY using the provided context.
+            If the answer is not in the context, reply with "I don't know".
+            Always be positive and supportive.
 
-                Question:
-                %s
-                """.formatted(context, question);
+            Context:
+            %s
+
+            Question:
+            %s
+            """.formatted(context, question);
 
     return openAiChatModel.call(new Prompt(new UserMessage(prompt)))
                     .getResult()

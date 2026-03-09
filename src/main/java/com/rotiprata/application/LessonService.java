@@ -23,8 +23,11 @@ import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
+import java.util.stream.Collectors;
+
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestClientResponseException;
@@ -50,20 +53,45 @@ public class LessonService {
     private final SupabaseRestClient supabaseRestClient;
     private final SupabaseAdminRestClient supabaseAdminRestClient;
     private final LessonQuizService lessonQuizService;
+    private final EmbeddingService embeddingService;
     private final ObjectMapper objectMapper = new ObjectMapper();
 
     public LessonService(
         SupabaseRestClient supabaseRestClient,
         SupabaseAdminRestClient supabaseAdminRestClient,
-        LessonQuizService lessonQuizService
+        LessonQuizService lessonQuizService,
+        EmbeddingService embeddingService
     ) {
         this.supabaseRestClient = supabaseRestClient;
         this.supabaseAdminRestClient = supabaseAdminRestClient;
         this.lessonQuizService = lessonQuizService;
+        this.embeddingService = embeddingService;
     }
 
-    public List<Map<String, Object>> findRelevantLesson(String question) {
-        
+    public String findRelevantLesson(String question) {
+        float[] qVector = embeddingService.generateEmbedding(question);
+
+        String vectorString = embeddingService.toPgVector(qVector);
+
+        // pgvector query: order by similarity, top 3 lessons
+        String query = "embedding <-> " + vectorString + " limit 3";
+
+        List<Map<String, Object>> lessons = supabaseAdminRestClient.getList(
+                "lessons",
+                query,
+                MAP_LIST
+        );
+
+        // return only text content to feed LLM
+        return lessons.stream()
+                .map(l -> String.join(" ",
+                        Objects.toString(l.get("title"), ""),
+                        Objects.toString(l.get("description"), ""),
+                        Objects.toString(l.get("summary"), ""),
+                        Objects.toString(l.get("definition_content"), ""),
+                        Objects.toString(l.get("usage_examples"), "")
+                ))
+                .collect(Collectors.joining("\n\n"));
     }
 
     public List<Map<String, Object>> getLessons(String accessToken) {
@@ -473,6 +501,29 @@ public class LessonService {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Unable to create lesson");
         }
         Map<String, Object> lesson = created.get(0);
+        // Embedding Logic
+        String textToEmbed = String.join(" ",
+            Objects.toString(lesson.get("title"), ""),
+            Objects.toString(lesson.get("description"), ""),
+            Objects.toString(lesson.get("summary"), ""),
+            Objects.toString(lesson.get("definition_content"), ""),
+            Objects.toString(lesson.get("usage_examples"), "")
+        );
+
+        float[] vector = embeddingService.generateEmbedding(textToEmbed);
+        String vectorString = embeddingService.toPgVector(vector);
+
+        // Store embedding
+        Map<String, Object> update = new HashMap<>();
+        update.put("embedding", vectorString);
+
+        supabaseAdminRestClient.patchList(
+            "lessons",
+            "id=eq." + lesson.get("id"),
+            update,
+            MAP_LIST
+        );
+
         if (!questions.isEmpty()) {
             createQuizWithQuestions(userId, lesson, questions);
         }
