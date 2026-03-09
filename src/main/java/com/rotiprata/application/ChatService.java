@@ -15,7 +15,7 @@ public class ChatService {
         this.openAiChatModel = openAiChatModel;
         this.lessonService = lessonService;
     }
-
+  
     public String ask(String question) {
 
         String context = lessonService.findRelevantLesson(question);

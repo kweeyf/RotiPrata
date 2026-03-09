@@ -8,7 +8,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import com.rotiprata.application.ChatService;
 
 @RestController
-@RequestMapping("/chat")
+@RequestMapping("/api")
 public class ChatController {
 
     private final ChatService chatService;
@@ -17,7 +17,7 @@ public class ChatController {
         this.chatService = chatService;
     }
 
-    @PostMapping
+    @PostMapping("/chat")
     public String chat(@RequestBody String question) {
         return chatService.ask(question);
     }
