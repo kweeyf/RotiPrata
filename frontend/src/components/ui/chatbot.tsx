@@ -67,6 +67,7 @@ const Chatbot = () => {
     if (isOpen) {
       getChatHistory()
         .then(data => {
+          console.log(data)
           const formatted: ChatMessage[] = data.map(d => ({
             role: d.role === "user" ? "user" : "assistant",
             message: d.message,
@@ -77,24 +78,6 @@ const Chatbot = () => {
         .catch(() => console.error("Failed to fetch chat history"));
     }
   }, [isOpen]);
-
-  // Add initial welcome message if no history
-  useEffect(() => {
-    if (isOpen && messages.length === 0) {
-      const timer = setTimeout(() => {
-        if (!isOpen) return;
-        setMessages([
-          {
-            role: "assistant",
-            message:
-              "Hi! Your AI tutor is online and full of brainrot. Ask anything about your lessons, I dare you.",
-            timestamp: new Date().toISOString()
-          }
-        ]);
-      }, 200);
-      return () => clearTimeout(timer);
-    }
-  }, [isOpen, messages.length]);
 
   // Close chat when clicking outside
   useEffect(() => {
@@ -156,6 +139,11 @@ const Chatbot = () => {
             ref={messagesRef}
             className="flex-1 p-3 flex flex-col gap-2 overflow-y-auto scrollbar-thin scrollbar-thumb-gray-300 dark:scrollbar-thumb-gray-600"
           >
+            {/* Always show the first message */}
+            <div className="self-start bg-gray-100 text-gray-900 dark:bg-gray-700 dark:text-white px-3 py-2 rounded-xl max-w-[75%] text-sm break-words">
+              Hi! Your AI tutor is online and full of brainrot. Ask anything about your lessons, I dare you.
+            </div>
+
             {messages.map((msg, idx) => (
               <div
                 key={idx}

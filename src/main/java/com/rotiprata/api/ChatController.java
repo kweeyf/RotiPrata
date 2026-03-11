@@ -4,6 +4,9 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.bind.annotation.RequestBody;
+
+import java.util.Map;
+
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.oauth2.jwt.Jwt;
 
@@ -20,9 +23,10 @@ public class ChatController {
     }
 
     @PostMapping("/chat")
-    public String chat(@AuthenticationPrincipal Jwt jwt , @RequestBody String question) {
+    public Map<String, String> chat(@AuthenticationPrincipal Jwt jwt , @RequestBody String question) {
         String accessToken = jwt.getTokenValue();
-        return chatService.ask(accessToken, question);
+        String answer = chatService.ask(accessToken, question);
+        return Map.of("reply", answer);
     }
     
 }

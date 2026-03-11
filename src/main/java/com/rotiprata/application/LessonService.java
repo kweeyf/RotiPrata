@@ -68,20 +68,25 @@ public class LessonService {
         this.embeddingService = embeddingService;
     }
 
-    public String findRelevantLesson(String question) {
+    public String findRelevantLesson(String accessToken, String question) {
         float[] qVector = embeddingService.generateEmbedding(question);
 
         String vectorString = embeddingService.toPgVector(qVector);
         System.out.println(vectorString);
 
         // pgvector query: order by similarity, top 3 lessons
-        String query = "embedding <-> " + vectorString + " limit 3";
-
-        List<Map<String, Object>> lessons = supabaseAdminRestClient.getList(
-                "lessons",
-                query,
-                MAP_LIST
+        Map<String, Object> body = Map.of(
+            "vec", vectorString,
+            "k", 3
         );
+
+        List<Map<String, Object>> lessons =
+            supabaseRestClient.rpcList(
+                "top_k_lessons",
+                body,
+                accessToken,
+                MAP_LIST
+            );
 
         for (Map<String, Object> lesson : lessons) {
             System.out.println("----- LESSON -----");

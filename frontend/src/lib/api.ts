@@ -341,10 +341,10 @@ export const searchContent = (query: string, filter?: string | null) =>
   );
 
 export const sendChatMessage = (message: string) =>
-  apiPost<ChatResponse>(`/chat`, { message });
+  apiPost<ChatResponse>(`/chat`, message);
 
 export const getChatHistory = () =>
-  apiGet<ChatbotMessageDTO[]>(`/me/chat`);
+  apiGet<ChatbotMessageDTO[]>(`/users/me/chat`);
 
 export const saveBrowsingHistory = (query: string) => {
   const body = { query, searched_at: new Date().toISOString() }

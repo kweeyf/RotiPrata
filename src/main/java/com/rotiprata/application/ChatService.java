@@ -32,7 +32,7 @@ public class ChatService {
         saveMessages(accessToken, question, "user");
 
         System.out.println(question);
-        String context = lessonService.findRelevantLesson(question);
+        String context = lessonService.findRelevantLesson(accessToken, question);
         
         System.out.println("===== QUESTION =====");
         System.out.println(question);
@@ -45,9 +45,9 @@ public class ChatService {
         String prompt = """
             You are a learning assistant.
 
-            Answer the question ONLY using the provided context.
+            Answer the question using the provided context.
+            Explain in your own words in a simple and friendly way, suitable for a learner.
             If the answer is not in the context, reply with "I don't know".
-            Always be positive and supportive.
 
             Context:
             %s
@@ -59,7 +59,6 @@ public class ChatService {
         String result = openAiChatModel.call(new Prompt(new UserMessage(prompt)))
                         .getResult()
                         .getOutput()
-                        // to check if the below is correct
                         .getText();
 
         saveMessages(accessToken, result, "assistant");
