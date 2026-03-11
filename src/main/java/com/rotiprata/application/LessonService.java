@@ -72,6 +72,7 @@ public class LessonService {
         float[] qVector = embeddingService.generateEmbedding(question);
 
         String vectorString = embeddingService.toPgVector(qVector);
+        System.out.println(vectorString);
 
         // pgvector query: order by similarity, top 3 lessons
         String query = "embedding <-> " + vectorString + " limit 3";
@@ -82,7 +83,15 @@ public class LessonService {
                 MAP_LIST
         );
 
-        System.out.println("Lessons found:" + lessons);
+        for (Map<String, Object> lesson : lessons) {
+            System.out.println("----- LESSON -----");
+            System.out.println("Title: " + lesson.get("title"));
+            System.out.println("Summary: " + lesson.get("summary"));
+            System.out.println("Description: " + lesson.get("description"));
+            System.out.println("Definition: " + lesson.get("definition_content"));
+            System.out.println("Usage: " + lesson.get("usage_examples"));
+            System.out.println();
+        }
 
         // return only text content to feed LLM
         return lessons.stream()

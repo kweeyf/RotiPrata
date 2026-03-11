@@ -1,10 +1,11 @@
 import React, { useState, useRef, useEffect } from "react";
-import { Input } from "./input.tsx"
-import { sendChatMessage } from "@/lib/api.ts"
+import { Input } from "./input.tsx";
+import { sendChatMessage, getChatHistory } from "@/lib/api.ts";
 
 type ChatMessage = {
-  sender: "user" | "bot";
-  text: string;
+  role: "user" | "assistant";
+  message: string;
+  timestamp: string;
 };
 
 const Chatbot = () => {
@@ -14,63 +15,88 @@ const Chatbot = () => {
   const [loading, setLoading] = useState(false);
   const chatRef = useRef<HTMLDivElement>(null);
   const messagesRef = useRef<HTMLDivElement>(null);
+  const chatButtonRef = useRef<HTMLButtonElement>(null);
 
+  // Toggle chat window
   const toggleChat = (e: React.MouseEvent<HTMLButtonElement>) => {
     setIsOpen(prev => !prev);
     setTimeout(() => {
       const inputEl = document.getElementById("chat-input") as HTMLInputElement;
       inputEl?.focus();
     }, 0);
-    (e.currentTarget as HTMLButtonElement).blur(); // remove focus from button
+    (e.currentTarget as HTMLButtonElement).blur();
   };
 
+  // Send user message and get AI reply
   const handleSend = async () => {
     if (!input.trim() || loading) return;
 
+    const question = input;
+    const userMessage: ChatMessage = {
+      role: "user",
+      message: question,
+      timestamp: new Date().toISOString()
+    };
+
+    setMessages(prev => [...prev, userMessage]);
+    setInput("");
     setLoading(true);
 
-    const userMessage: ChatMessage = { sender: "user", text: input };
-    const updatedMessages = [...messages, userMessage];
-
-    setMessages(updatedMessages);
-    setInput("");
-
     try {
-      const res = await sendChatMessage(
-        updatedMessages.map(m => ({
-          role: m.sender === "user" ? "user" : "assistant",
-          content: m.text
-        }))
-      );
-
-      setMessages(prev => [
-        ...prev,
-        { sender: "bot", text: res.reply }
-      ]);
+      const res = await sendChatMessage(question);
+      const botMessage: ChatMessage = {
+        role: "assistant",
+        message: res.reply,
+        timestamp: new Date().toISOString()
+      };
+      setMessages(prev => [...prev, botMessage]);
     } catch {
-      setMessages(prev => [
-        ...prev,
-        { sender: "bot", text: "Something went wrong." }
-      ]);
+      const errorMsg: ChatMessage = {
+        role: "assistant",
+        message: "Something went wrong.",
+        timestamp: new Date().toISOString()
+      };
+      setMessages(prev => [...prev, errorMsg]);
     }
 
     setLoading(false);
   };
 
+  // Fetch chat history on open
   useEffect(() => {
-    if (isOpen && messages.length === 0) { 
+    if (isOpen) {
+      getChatHistory()
+        .then(data => {
+          const formatted: ChatMessage[] = data.map(d => ({
+            role: d.role === "user" ? "user" : "assistant",
+            message: d.message,
+            timestamp: d.timestamp
+          }));
+          setMessages(formatted);
+        })
+        .catch(() => console.error("Failed to fetch chat history"));
+    }
+  }, [isOpen]);
+
+  // Add initial welcome message if no history
+  useEffect(() => {
+    if (isOpen && messages.length === 0) {
       const timer = setTimeout(() => {
         if (!isOpen) return;
         setMessages([
-          { sender: "bot", text: "Hi! Your AI tutor is online and full of brainrot. Ask anything about your lessons, I dare you." }
+          {
+            role: "assistant",
+            message:
+              "Hi! Your AI tutor is online and full of brainrot. Ask anything about your lessons, I dare you.",
+            timestamp: new Date().toISOString()
+          }
         ]);
-      }, 200); 
-      return () => clearTimeout(timer); 
+      }, 200);
+      return () => clearTimeout(timer);
     }
   }, [isOpen, messages.length]);
 
-  const chatButtonRef = useRef<HTMLButtonElement>(null);
-
+  // Close chat when clicking outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (
@@ -82,11 +108,11 @@ const Chatbot = () => {
         setIsOpen(false);
       }
     };
-
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
+  // Auto-scroll to bottom
   useEffect(() => {
     const container = messagesRef.current;
     if (container) {
@@ -134,12 +160,12 @@ const Chatbot = () => {
               <div
                 key={idx}
                 className={`px-3 py-2 rounded-xl max-w-[75%] text-sm break-words
-                  ${msg.sender === "user"
+                  ${msg.role === "user"
                     ? "self-end bg-mainAccent text-white dark:bg-[#d6336c] dark:text-white"
                     : "self-start bg-gray-100 text-gray-900 dark:bg-gray-700 dark:text-white"
                   }`}
               >
-                {msg.text}
+                {msg.message}
               </div>
             ))}
           </div>
