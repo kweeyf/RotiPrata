@@ -187,7 +187,7 @@ const Chatbot = () => {
                     : "self-start bg-gray-100 text-gray-900 dark:bg-gray-700 dark:text-white"
                   }`}
               >
-                {msg.message}
+                {msg.message.replace(/^"(.*)"$/, '$1')}
               </div>
             ))
           ) : (
