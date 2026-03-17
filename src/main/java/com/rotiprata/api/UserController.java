@@ -2,6 +2,7 @@ package com.rotiprata.api;
 
 import com.rotiprata.api.dto.SaveHistoryRequestDTO;
 import com.rotiprata.api.dto.ThemePreferenceRequest;
+import com.rotiprata.api.dto.UpdateProfileRequest;
 import com.rotiprata.api.dto.GetHistoryDTO;
 import com.rotiprata.application.BrowsingService;
 import com.rotiprata.application.LessonQuizService;
@@ -77,6 +78,20 @@ public class UserController {
         return userService.updateThemePreference(
                 userId,
                 preference,
+                SecurityUtils.getAccessToken()
+        );
+    }
+
+    @PutMapping("/me")
+    public Profile updateProfile(
+            @AuthenticationPrincipal Jwt jwt,
+            @Valid @RequestBody UpdateProfileRequest request
+    ) {
+        UUID userId = SecurityUtils.getUserId(jwt);
+        return userService.updateProfile(
+                userId,
+                request.displayName(),
+                request.isGenAlpha(),
                 SecurityUtils.getAccessToken()
         );
     }

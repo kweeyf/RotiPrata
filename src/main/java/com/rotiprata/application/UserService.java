@@ -235,6 +235,44 @@ public class UserService {
         return updated.get(0);
     }
 
+    public Profile updateProfile(UUID userId, String displayName, Boolean isGenAlpha, String accessToken) {
+        String token = requireAccessToken(accessToken);
+        Profile current = getProfile(userId, token);
+
+        Map<String, Object> patch = new HashMap<>();
+        if (displayName != null) {
+            String normalizedDisplayName = normalizeDisplayName(displayName);
+            String currentDisplayName = normalizeDisplayName(current.getDisplayName());
+            if (!isDisplayNameFormatValid(displayName)) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Display name format is invalid");
+            }
+            if (normalizedDisplayName != null && !normalizedDisplayName.equals(currentDisplayName) && isDisplayNameTaken(normalizedDisplayName)) {
+                throw new ResponseStatusException(HttpStatus.CONFLICT, "Display name already in use");
+            }
+            patch.put("display_name", displayName.trim());
+        }
+        if (isGenAlpha != null) {
+            patch.put("is_gen_alpha", isGenAlpha);
+        }
+
+        if (patch.isEmpty()) {
+            return current;
+        }
+
+        patch.put("updated_at", OffsetDateTime.now());
+        List<Profile> updated = supabaseRestClient.patchList(
+            "profiles",
+            buildQuery(Map.of("user_id", "eq." + userId)),
+            patch,
+            token,
+            PROFILE_LIST
+        );
+        if (updated.isEmpty()) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Profile not found");
+        }
+        return updated.get(0);
+    }
+
     private Profile createProfile(UUID userId, String displayName, Boolean isGenAlpha, String accessToken) {
         return createProfile(userId, displayName, isGenAlpha, accessToken, true);
     }

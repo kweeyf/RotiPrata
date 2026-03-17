@@ -692,6 +692,9 @@ export const deleteContentComment = (contentId: string, commentId: string) =>
 export const fetchProfile = () =>
   withMockFallback("profile", () => mockProfile, () => apiGet<Profile>(`/users/me`));
 
+export const updateProfile = (payload: { display_name?: string; is_gen_alpha?: boolean }) =>
+  apiPut<Profile>(`/users/me`, payload);
+
 export const fetchAchievements = () =>
   withMockFallback(
     "achievements",
