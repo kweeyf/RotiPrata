@@ -15,7 +15,6 @@ import {
   Trophy,
   Flame,
   Star,
-  Clock,
   BookOpen,
   ChevronRight,
   Edit,
@@ -31,7 +30,7 @@ import { fetchAchievements, fetchProfile, fetchUserStats } from '@/lib/api';
 // Dummy data is returned when mocks are enabled.
 
 const ProfilePage = () => {
-  const { isAuthenticated, logout, isAdmin, isContributor } = useAuthContext();
+  const { isAuthenticated, logout, isAdmin } = useAuthContext();
   const { theme, resolvedTheme, setTheme } = useThemeContext();
   const [profile, setProfile] = useState<Profile | null>(null);
   const [achievements, setAchievements] = useState<UserAchievement[]>([]);
@@ -107,7 +106,7 @@ const ProfilePage = () => {
     );
   }
 
-  const displayName = profile.display_name || 'User';
+  const displayName = profile.display_name?.trim() || 'User';
   const displayInitial = displayName ? displayName[0] : 'U';
   const themeOptions: Array<{ value: ThemePreference; label: string }> = [
     { value: 'light', label: 'Light' },
@@ -134,18 +133,12 @@ const ProfilePage = () => {
                   <Badge className="bg-secondary text-secondary-foreground">âœ“ Verified</Badge>
                 )}
               </div>
-              {profile.display_name && (
-                <p className="text-muted-foreground">@{profile.display_name}</p>
-              )}
               {profile.bio && <p className="text-sm mt-1">{profile.bio}</p>}
               
               {/* Role badges */}
               <div className="flex gap-2 mt-2">
                 {isAdmin() && (
                   <Badge variant="destructive">Admin</Badge>
-                )}
-                {isContributor() && (
-                  <Badge variant="secondary">User</Badge>
                 )}
               </div>
             </div>
@@ -159,7 +152,7 @@ const ProfilePage = () => {
         </div>
 
         {/* Stats Grid */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
+        <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 mb-6">
           <Card>
             <CardContent className="p-3 text-center">
               <Flame className="h-6 w-6 mx-auto mb-1 text-destructive" />
@@ -178,14 +171,7 @@ const ProfilePage = () => {
             <CardContent className="p-3 text-center">
               <Star className="h-6 w-6 mx-auto mb-1 text-primary" />
               <p className="text-2xl font-bold">{profile.reputation_points}</p>
-              <p className="text-xs text-muted-foreground">Rep Points</p>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="p-3 text-center">
-              <Clock className="h-6 w-6 mx-auto mb-1 text-secondary" />
-              <p className="text-2xl font-bold">{profile.total_hours_learned}h</p>
-              <p className="text-xs text-muted-foreground">Learned</p>
+              <p className="text-xs text-muted-foreground">XP</p>
             </CardContent>
           </Card>
         </div>
@@ -335,5 +321,3 @@ const ProfilePage = () => {
 };
 
 export default ProfilePage;
-
-

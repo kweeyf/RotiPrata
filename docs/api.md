@@ -34,6 +34,7 @@ Audit source: controller mappings in `src/main/java/com/rotiprata/api/*Controlle
 
 ### Users (`UserController`)
 - `GET /users/me`
+- `PUT /users/me`
 - `GET /users/me/roles`
 - `GET /users/me/preferences`
 - `PUT /users/me/preferences`
@@ -181,6 +182,7 @@ Audit source: controller mappings in `src/main/java/com/rotiprata/api/*Controlle
 
 ### User profile / utility
 - `GET /users/me` -> implemented
+- `PUT /users/me` -> implemented
 - `GET /users/me/roles` -> implemented
 - `GET /users/me/preferences` -> implemented
 - `PUT /users/me/preferences` -> implemented
@@ -274,6 +276,10 @@ Audit source: controller mappings in `src/main/java/com/rotiprata/api/*Controlle
 - Comment deletion authorization:
   - `DELETE /content/{contentId}/comments/{commentId}` allows admins to delete any comment.
   - Non-admin users can delete only comments they authored.
+- `PUT /users/me`:
+  - Authenticated only.
+  - User id comes from the JWT subject on the server, not from request body data.
+  - Supports `display_name` and `is_gen_alpha`.
 - `/users/me` may include `timezone` for login streak day-boundary preference.
 - `PUT /users/me/preferences` backend DTO uses `themePreference` (camelCase).  
   Frontend currently sends `theme_preference` in `frontend/src/lib/api.ts`.

@@ -17,6 +17,7 @@ import LessonDetailPage from "./pages/LessonDetailPage";
 import LessonSectionPage from "./pages/LessonSectionPage";
 import LessonQuizPage from "./pages/LessonQuizPage";
 import ProfilePage from "./pages/ProfilePage";
+import EditProfilePage from "./pages/EditProfilePage";
 import LoginPage from "./pages/LoginPage";
 import RegisterPage from "./pages/RegisterPage";
 import ForgotPasswordPage from "./pages/ForgotPasswordPage";
@@ -102,6 +103,14 @@ const App = () => (
                 element={
                   <RequireAuth>
                     <ProfilePage />
+                  </RequireAuth>
+                }
+              />
+              <Route
+                path="/profile/edit"
+                element={
+                  <RequireAuth>
+                    <EditProfilePage />
                   </RequireAuth>
                 }
               />
