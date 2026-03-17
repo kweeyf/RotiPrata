@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { ArrowLeft } from 'lucide-react';
 
@@ -13,6 +13,7 @@ import { checkDisplayNameAvailability, fetchProfile, updateProfile } from '@/lib
 import {
   isDisplayNameFormatValid,
   DISPLAY_NAME_POLICY_MESSAGE,
+  normalizeDisplayName,
 } from '@/lib/displayNamePolicy';
 
 const EditProfilePage = () => {
@@ -28,6 +29,7 @@ const EditProfilePage = () => {
   const [originalDisplayName, setOriginalDisplayName] = useState('');
   const [isGenAlpha, setIsGenAlpha] = useState(false);
   const [displayNameStatus, setDisplayNameStatus] = useState<'idle' | 'checking' | 'available' | 'taken' | 'invalid' | 'error'>('idle');
+  const availabilityRequestId = useRef(0);
 
   useEffect(() => {
     if (!isAuthenticated) return;
@@ -45,29 +47,40 @@ const EditProfilePage = () => {
       .finally(() => setLoading(false));
   }, [isAuthenticated]);
 
-  const normalizedDisplayName = useMemo(() => displayName.trim().toLowerCase(), [displayName]);
-  const normalizedOriginalDisplayName = useMemo(() => originalDisplayName.trim().toLowerCase(), [originalDisplayName]);
+  const normalizedDisplayName = useMemo(() => normalizeDisplayName(displayName), [displayName]);
+  const normalizedOriginalDisplayName = useMemo(() => normalizeDisplayName(originalDisplayName), [originalDisplayName]);
 
   useEffect(() => {
     if (!displayName.trim()) {
+      availabilityRequestId.current += 1;
       setDisplayNameStatus('idle');
       return;
     }
     if (!isDisplayNameFormatValid(displayName)) {
+      availabilityRequestId.current += 1;
       setDisplayNameStatus('invalid');
       return;
     }
     if (normalizedDisplayName === normalizedOriginalDisplayName) {
+      availabilityRequestId.current += 1;
       setDisplayNameStatus('available');
       return;
     }
 
     setDisplayNameStatus('checking');
+    const requestId = ++availabilityRequestId.current;
+    const candidate = displayName;
     const timeout = window.setTimeout(async () => {
       try {
-        const result = await checkDisplayNameAvailability(displayName);
+        const result = await checkDisplayNameAvailability(candidate);
+        if (availabilityRequestId.current !== requestId) {
+          return;
+        }
         setDisplayNameStatus(result.available ? 'available' : 'taken');
       } catch (err) {
+        if (availabilityRequestId.current !== requestId) {
+          return;
+        }
         console.error('Display name check failed', err);
         setDisplayNameStatus('error');
       }
@@ -98,13 +111,15 @@ const EditProfilePage = () => {
       return;
     }
 
+    const normalizedToSave = normalizeDisplayName(displayName);
     setSaving(true);
     try {
       await updateProfile({
-        display_name: displayName.trim(),
+        display_name: normalizedToSave,
         is_gen_alpha: isGenAlpha,
       });
-      setOriginalDisplayName(displayName.trim());
+      setDisplayName(normalizedToSave);
+      setOriginalDisplayName(normalizedToSave);
       setMessage('Profile updated successfully.');
       window.setTimeout(() => navigate('/profile'), 500);
     } catch (err) {
@@ -125,6 +140,12 @@ const EditProfilePage = () => {
     );
   }
 
+  const isSubmitDisabled =
+    saving
+    || displayNameStatus === 'checking'
+    || displayNameStatus === 'taken'
+    || displayNameStatus === 'invalid';
+
   return (
     <MainLayout>
       <div className="container max-w-md mx-auto px-4 py-6 md:py-8">
@@ -135,7 +156,7 @@ const EditProfilePage = () => {
 
         <Card>
           <CardHeader>
-            <CardTitle>Edit User</CardTitle>
+            <CardTitle>Edit Profile</CardTitle>
             <CardDescription>Update the profile fields you set during sign up.</CardDescription>
           </CardHeader>
           <CardContent>
@@ -174,7 +195,7 @@ const EditProfilePage = () => {
                 </Label>
               </div>
 
-              <Button type="submit" className="w-full" disabled={saving}>
+              <Button type="submit" className="w-full" disabled={isSubmitDisabled}>
                 {saving ? 'Saving...' : 'Save Changes'}
               </Button>
             </form>

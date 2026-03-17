@@ -249,7 +249,7 @@ public class UserService {
             if (normalizedDisplayName != null && !normalizedDisplayName.equals(currentDisplayName) && isDisplayNameTaken(normalizedDisplayName)) {
                 throw new ResponseStatusException(HttpStatus.CONFLICT, "Display name already in use");
             }
-            patch.put("display_name", displayName.trim());
+            patch.put("display_name", normalizedDisplayName);
         }
         if (isGenAlpha != null) {
             patch.put("is_gen_alpha", isGenAlpha);
