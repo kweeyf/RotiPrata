@@ -46,8 +46,12 @@ const ProfilePage = () => {
   useEffect(() => {
     if (!isAuthenticated) return;
     fetchProfile()
-      .then(setProfile)
+      .then((data) => {
+        console.log('Profile data:', data); // check display_name here
+        setProfile(data);
+      })
       .catch((error) => console.warn('Failed to load profile', error));
+  
 
     fetchAchievements()
       .then(setAchievements)
@@ -108,7 +112,7 @@ const ProfilePage = () => {
   }
 
   const username = profile.display_name?.trim() || null;
-  const displayName = username || 'User';
+  const displayName = profile.display_name || (profile as any).displayName || 'User';
   const displayInitial = displayName ? displayName[0] : 'U';
   const themeOptions: Array<{ value: ThemePreference; label: string }> = [
     { value: 'light', label: 'Light' },
