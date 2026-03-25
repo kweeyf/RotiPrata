@@ -4,7 +4,7 @@
 export type AppRole = 'user' | 'admin';
 export type ContentStatus = 'pending' | 'approved' | 'rejected';
 export type ContentType = 'video' | 'image' | 'text';
-export type CategoryType = 'slang' | 'meme' | 'dance_trend' | 'social_practice' | 'cultural_reference';
+export type CategoryType = 'slang' | 'meme' | 'dance_trend' | 'social_practice' | 'cultural_reference' | 'other';
 export type ThemePreference = 'light' | 'dark' | 'system';
 
 export interface Profile {
@@ -99,6 +99,8 @@ export interface Lesson {
   badge_name: string | null;
   badge_icon_url: string | null;
   difficulty_level: number;
+  category_id: string | null;
+  path_order: number | null;
   is_published: boolean;
   is_active?: boolean;
   archived_at?: string | null;
@@ -126,11 +128,12 @@ export interface LessonHubLesson {
   visuallyLocked: boolean;
 }
 
-export interface LessonHubUnit {
-  unitId: string;
-  title: string;
-  orderIndex: number;
-  accentColor: string;
+export interface LessonHubCategory {
+  categoryId: string | null;
+  name: string;
+  type: string | null;
+  color: string | null;
+  isVirtual: boolean;
   lessons: LessonHubLesson[];
 }
 
@@ -141,7 +144,7 @@ export interface LessonHubSummary {
 }
 
 export interface LessonHubResponse {
-  units: LessonHubUnit[];
+  categories: LessonHubCategory[];
   summary: LessonHubSummary;
 }
 
@@ -433,6 +436,14 @@ export interface AdminPublishLessonResult {
   firstInvalidStep: WizardStepKey | null;
   errors: AdminValidationError[];
   lessonSnapshot: Record<string, unknown>;
+}
+
+export interface AdminLessonCategoryMoveResult {
+  sourceCategoryId: string | null;
+  targetCategoryId: string | null;
+  sourceLessons: Lesson[];
+  targetLessons: Lesson[];
+  movedLesson: Lesson;
 }
 
 export interface AdminLessonWizardState {

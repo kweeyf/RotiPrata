@@ -105,6 +105,8 @@ Audit source: controller mappings in `src/main/java/com/rotiprata/api/*Controlle
 ### Admin Lessons and Quiz Builder (`LessonController`)
 - `GET /admin/lessons`
 - `GET /admin/lessons/{lessonId}`
+- `PUT /admin/lessons/{lessonId}/move-category`
+- `PUT /admin/lessons/path-order`
 - `POST /admin/lessons/draft`
 - `PUT /admin/lessons/{lessonId}/draft/step/{stepKey}`
 - `POST /admin/lessons/{lessonId}/publish`
@@ -235,7 +237,7 @@ Audit source: controller mappings in `src/main/java/com/rotiprata/api/*Controlle
 ### Lessons learner flow
 - `GET /lessons` -> implemented
 - `GET /lessons/feed` -> implemented
-- `GET /lessons/hub` -> implemented
+- `GET /lessons/hub` -> implemented (category-based response)
 - `GET /lessons/search` -> implemented
 - `GET /lessons/{id}` -> implemented
 - `GET /lessons/{id}/sections` -> implemented
@@ -267,6 +269,8 @@ Audit source: controller mappings in `src/main/java/com/rotiprata/api/*Controlle
 - `PUT /admin/flags/{id}/resolve` -> implemented
 - `GET /admin/lessons` -> implemented
 - `GET /admin/lessons/{id}` -> implemented
+- `PUT /admin/lessons/{id}/move-category` -> implemented
+- `PUT /admin/lessons/path-order` -> implemented
 - `POST /admin/lessons/draft` -> implemented
 - `PUT /admin/lessons/{id}/draft/step/{step}` -> implemented
 - `POST /admin/lessons/{id}/publish` -> implemented
@@ -303,3 +307,8 @@ Audit source: controller mappings in `src/main/java/com/rotiprata/api/*Controlle
   Frontend currently sends `theme_preference` in `frontend/src/lib/api.ts`.
 - Learner quiz endpoints do not expose `correct_answer`; grading is server-side.
 - `PUT /lessons/{lessonId}/progress` exists for backward compatibility; section completion + quiz flow is the primary path.
+- `GET /lessons/hub` now returns `summary` plus `categories[]`, where each category includes `categoryId`, `name`, `type`, `color`, `isVirtual`, and ordered `lessons[]`.
+- Real categories are returned even when they have no lessons; legacy published lessons without `category_id` are grouped into a synthetic `Uncategorized` category.
+- Lesson authoring now persists `category_id` on `lessons`; `path_order` is assigned automatically when a lesson is published and then managed from the Manage Lessons path board.
+- `PUT /admin/lessons/path-order` accepts `{ categoryId, lessonIds }` and rewrites contiguous `path_order` values inside the selected category bucket.
+- `PUT /admin/lessons/{lessonId}/move-category` accepts `{ sourceCategoryId, targetCategoryId, sourceLessonIds, targetLessonIds }`, updates `category_id`, and normalizes path order in both affected categories.
