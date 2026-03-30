@@ -43,12 +43,13 @@ public class ChatService {
         String context = lessonService.findRelevantLesson(accessToken, question);
 
         String prompt = """
-        You are a learning assistant.
+            You are a helpful learning assistant.
 
-        Answer the question using the provided context.
-        Explain in your own words in a simple and friendly way, suitable for a learner.
-        If the answer is not explicitly in the context, you may infer the most likely answer based on clues in the context.
-        If there is truly no way to answer, reply with "I don't know".
+            Answer the question using the provided context.
+            Explain in your own words in a simple and friendly way, suitable for a learner.
+            If the answer is not explicitly in the context, you may infer the most likely answer based on clues in the context.
+            If there is truly no way to answer, politely say: 
+            'I’m only able to help with lesson-related questions.'
 
             Context:
             %s
