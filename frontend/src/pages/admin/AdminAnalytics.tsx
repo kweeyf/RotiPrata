@@ -1,12 +1,56 @@
 import React, { useEffect, useState } from "react";
-import { Card, CardContent } from "@/components/ui/card";
 import { MainLayout } from "@/components/layout/MainLayout";
-import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
+import {
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  Tooltip,
+  ResponsiveContainer,
+  CartesianGrid,
+} from "recharts";
 import { getFlaggedContentStats, getAvgReviewTimeStats, FlagByDate } from "@/lib/api";
 
 // Types
 type TopItem = { name: string; count: number };
 type AuditLog = { admin: string; action: string; targetId: number; time: string };
+
+const actionMeta: Record<string, { color: string; bg: string; border: string }> = {
+  DELETE_CONTENT:  { color: "text-red-400",    bg: "bg-red-400/10",     border: "border-red-400/30"     },
+  BAN_USER:        { color: "text-orange-400", bg: "bg-orange-400/10",  border: "border-orange-400/30"  },
+  WARN_USER:       { color: "text-yellow-400", bg: "bg-yellow-400/10",  border: "border-yellow-400/30"  },
+  APPROVE_CONTENT: { color: "text-emerald-400",bg: "bg-emerald-400/10", border: "border-emerald-400/30" },
+};
+
+const CustomTooltip = ({ active, payload, label }: any) => {
+  if (!active || !payload?.length) return null;
+  return (
+    <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-3 shadow-xl">
+      <p className="text-xs text-slate-400 mb-1">Day {label}</p>
+      <p className="text-lg font-bold text-indigo-500">{payload[0].value} flags</p>
+    </div>
+  );
+};
+
+const StatCard = ({ label, value, accent }: { label: string; value: string | number; accent: string }) => (
+  <div className="flex-1 min-w-[130px] rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800/60 px-6 py-5 shadow-sm">
+    <p className="text-xs font-semibold uppercase tracking-widest text-slate-400 mb-2">{label}</p>
+    <p className={`text-3xl font-extrabold ${accent}`}>{value}</p>
+  </div>
+);
+
+const SectionHeading = ({ children }: { children: React.ReactNode }) => (
+  <div className="flex items-center gap-3 mb-5">
+    <span className="w-1 h-5 rounded-full bg-gradient-to-b from-indigo-400 to-indigo-600 shrink-0" />
+    <h2 className="text-base font-bold tracking-tight text-slate-800 dark:text-slate-100">{children}</h2>
+  </div>
+);
+
+const Panel = ({ children, className = "" }: { children: React.ReactNode; className?: string }) => (
+  <div className={`rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800/60 shadow-sm ${className}`}>
+    {children}
+  </div>
+);
 
 const AdminAnalytics = () => {
   const [flagTrend, setFlagTrend] = useState<{ day: string; count: number }[]>([]);
@@ -21,57 +65,36 @@ const AdminAnalytics = () => {
   const maxMonth = today.getMonth();
 
   const [selectedMonth, setSelectedMonth] = useState(() => {
-    const today = new Date();
-    return `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}`;
+    const t = new Date();
+    return `${t.getFullYear()}-${String(t.getMonth() + 1).padStart(2, "0")}`;
   });
 
-  const getDaysInMonth = (year: number, month: number) => {
-    return new Array(new Date(year, month, 0).getDate()).fill(0).map((_, i) => i + 1);
-  };
+  const getDaysInMonth = (year: number, month: number) =>
+    new Array(new Date(year, month, 0).getDate()).fill(0).map((_, i) => i + 1);
 
   const formatFlagDataForMonth = (data: FlagByDate[], year: number, month: number) => {
     const days = getDaysInMonth(year, month);
     const dataMap: Record<number, number> = {};
-
-    data.forEach((item) => {
-      const day = new Date(item.date).getDate();
-      dataMap[day] = item.count;
-    });
-
-    return days.map((day) => ({
-      day: day.toString(),
-      count: dataMap[day] || 0,
-    }));
+    data.forEach((item) => { dataMap[new Date(item.date).getDate()] = item.count; });
+    return days.map((day) => ({ day: day.toString(), count: dataMap[day] || 0 }));
   };
 
   useEffect(() => {
     const loadAnalytics = async () => {
       const [yearStr, monthStr] = selectedMonth.split("-");
-      const year = Number(yearStr);
-      const month = Number(monthStr);
-
+      const year = Number(yearStr), month = Number(monthStr);
       try {
-        // Fetch flagged content for the chart
         const flagData = await getFlaggedContentStats(monthStr, yearStr);
-        const formattedFlagData = formatFlagDataForMonth(flagData, year, month);
-        setFlagTrend(formattedFlagData);
+        setFlagTrend(formatFlagDataForMonth(flagData, year, month));
 
-        // Fetch average review time
         const avgReview = await getAvgReviewTimeStats(monthStr, yearStr);
         setAvgReviewTime(avgReview.avgReviewTime);
 
-        // Set formatted month/year for display
-        const monthYearStr = new Date(year, month - 1, 1).toLocaleDateString("en-GB", {
-          month: "long",
-          year: "numeric",
-        });
-        setMonthYear(monthYearStr);
-
+        setMonthYear(new Date(year, month - 1, 1).toLocaleDateString("en-GB", { month: "long", year: "numeric" }));
       } catch (err) {
         console.error("Failed to fetch analytics:", err);
       }
     };
-
     loadAnalytics();
   }, [selectedMonth]);
 
@@ -80,206 +103,257 @@ const AdminAnalytics = () => {
       { name: "user1", count: 12 },
       { name: "user2", count: 9 },
     ]);
-
     setTopContent([
       { name: "Post #123", count: 15 },
       { name: "Post #456", count: 11 },
     ]);
-
     setAuditLogs([
       { admin: "Admin1", action: "DELETE_CONTENT", targetId: 123, time: "10:00" },
-      { admin: "Admin2", action: "BAN_USER", targetId: 45, time: "11:30" },
+      { admin: "Admin2", action: "BAN_USER",       targetId: 45,  time: "11:30" },
     ]);
   }, []);
 
+  const totalFlags = flagTrend.reduce((a, d) => a + d.count, 0);
+  const maxFlags   = Math.max(...flagTrend.map((d) => d.count), 0);
+
+  const reviewAccent =
+    avgReviewTime > 20 ? "text-red-400" : avgReviewTime > 10 ? "text-orange-400" : "text-emerald-400";
+  const reviewStroke =
+    avgReviewTime > 20 ? "#f87171" : avgReviewTime > 10 ? "#fb923c" : "#34d399";
+  const reviewStatus =
+    avgReviewTime > 20 ? "⚠ High — needs attention"
+    : avgReviewTime > 10 ? "△ Moderate"
+    : avgReviewTime > 0 ? "✓ Within target" : "";
+
+  const selectCls =
+    "rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-800 " +
+    "text-slate-700 dark:text-slate-200 text-sm px-3 py-2 outline-none cursor-pointer";
+
   return (
     <MainLayout>
-      <div className="p-6 space-y-8 min-h-screen bg-gray-50 text-gray-900 dark:bg-gray-900 dark:text-gray-100">
-        
-        {/* Overview */}
-        <div>
-          <h1 className="text-2xl font-bold mb-4">Analytics Overview</h1>
+      <div className="min-h-screen bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-slate-100 p-8 space-y-8">
 
-          {/* Controls */}
-          <div className="flex gap-4 items-center mb-6">
-            <label className="font-semibold text-gray-700 dark:text-gray-300">
-              Period:
-            </label>
+        {/* ── Header ─────────────────────────────────── */}
+        <div className="flex items-start justify-between gap-4 flex-wrap">
+          <div>
+            <div className="flex items-center gap-2 mb-1">
+              <span className="w-2 h-2 rounded-full bg-emerald-400 shadow-[0_0_6px_#34d399]" />
+              <span className="text-xs font-semibold uppercase tracking-widest text-emerald-400">
+                Live Dashboard
+              </span>
+            </div>
+            <h1 className="text-2xl font-extrabold tracking-tight text-slate-900 dark:text-white">
+              Admin Analytics
+            </h1>
+          </div>
 
-            {/* Month */}
+          {/* Period Selector */}
+          <div className="flex items-center gap-2 flex-wrap bg-white dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 rounded-2xl px-4 py-3 shadow-sm">
+            <span className="text-sm text-slate-400 mr-1">Period:</span>
+
             <select
+              className={selectCls}
               value={Number(selectedMonth.split("-")[1]) - 1}
               onChange={(e) => {
-                const year = selectedMonth.split("-")[0];
+                const year  = selectedMonth.split("-")[0];
                 const month = String(Number(e.target.value) + 1).padStart(2, "0");
                 setSelectedMonth(`${year}-${month}`);
               }}
-              className="border rounded-lg px-4 py-2 bg-white text-gray-700 
-              dark:bg-gray-800 dark:text-gray-200 dark:border-gray-600"
             >
-              {["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"].map((m, idx) => {
-                const isDisabled =
-                  Number(selectedMonth.split("-")[0]) === maxYear && idx > maxMonth;
-
-                return (
-                  <option key={idx} value={idx} disabled={isDisabled}>
-                    {m}
-                  </option>
-                );
-              })}
+              {["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"].map((m, idx) => (
+                <option
+                  key={idx} value={idx}
+                  disabled={Number(selectedMonth.split("-")[0]) === maxYear && idx > maxMonth}
+                >
+                  {m}
+                </option>
+              ))}
             </select>
 
-            {/* Year */}
             <select
+              className={selectCls}
               value={selectedMonth.split("-")[0]}
-              onChange={(e) =>
-                setSelectedMonth(`${e.target.value}-${selectedMonth.split("-")[1]}`)
-              }
-              className="border rounded-lg px-4 py-2 bg-white text-gray-700 
-              dark:bg-gray-800 dark:text-gray-200 dark:border-gray-600"
+              onChange={(e) => setSelectedMonth(`${e.target.value}-${selectedMonth.split("-")[1]}`)}
             >
-              {Array.from(
-                { length: new Date().getFullYear() - 2020 + 1 },
-                (_, i) => 2020 + i
-              ).map((y) => (
-                <option key={y} value={y}>
-                  {y}
-                </option>
+              {Array.from({ length: new Date().getFullYear() - 2020 + 1 }, (_, i) => 2020 + i).map((y) => (
+                <option key={y} value={y}>{y}</option>
               ))}
             </select>
 
             <button
               onClick={() => {
-                const today = new Date();
-                setSelectedMonth(
-                  `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}`
-                );
+                const t = new Date();
+                setSelectedMonth(`${t.getFullYear()}-${String(t.getMonth() + 1).padStart(2, "0")}`);
               }}
-              className="bg-indigo-500 text-white px-4 py-2 rounded-lg hover:bg-indigo-600"
+              className="bg-indigo-500 hover:bg-indigo-600 active:bg-indigo-700 text-white text-sm font-semibold px-4 py-2 rounded-lg transition-colors"
             >
               This Month
             </button>
           </div>
+        </div>
 
-          {/* Charts */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <Card className="bg-white dark:bg-gray-800 shadow-sm rounded-2xl">
-              <CardContent>
-                <h2 className="text-lg font-semibold mb-2">
-                  Flag Trend - {monthYear}
-                </h2>
+        {/* ── KPI Stat Cards ──────────────────────────── */}
+        <div className="flex gap-4 flex-wrap">
+          <StatCard label="Total Flags" value={totalFlags}                                       accent="text-indigo-500" />
+          <StatCard label="Peak Day Flags" value={maxFlags}                                          accent="text-pink-500"   />
+          <StatCard label="Avg Review Time" value={avgReviewTime > 0 ? `${avgReviewTime}m` : "N/A"}  accent={reviewAccent}    />
+          <StatCard label="Audit Events" value={auditLogs.length}                                  accent="text-sky-500"    />
+        </div>
 
-                <ResponsiveContainer width="100%" height={250}>
-                  <BarChart data={flagTrend} margin={{ top: 10, right: 20, left: 10, bottom: 40 }}>
-                    <XAxis dataKey="day" tick={{ fill: "#9CA3AF", fontSize: 12 }} 
-                    label={{ 
-                      value: "Day", 
-                      position: "insideBottom", 
-                      offset: -1,
-                      dy: 10,
-                      fill: "#9CA3AF"
-                    }}/>
-                    <YAxis tick={{ fill: "#9CA3AF" }} allowDecimals={false}   
-                    label={{ 
-                      value: "Number of Flags",
-                      angle: -90,
-                      position: "left",
-                      dx: 10,
-                      style: { fill: "#9CA3AF", textAnchor: "middle" }
-                    }}/>
-                    <Tooltip
-                      contentStyle={{ backgroundColor: "#1F2937", border: "none" }}
-                      labelStyle={{ color: "#E5E7EB" }}
-                    />
-                    <Bar dataKey="count" fill="#6366F1" />
-                  </BarChart>
-                </ResponsiveContainer>
-              </CardContent>
-            </Card>
+        {/* ── Charts ──────────────────────────────────── */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
 
-            <Card className="bg-white dark:bg-gray-800 shadow-sm rounded-2xl flex items-center justify-center">
-              <CardContent className="flex flex-col items-center justify-center">
-                <h2 className="text-lg font-semibold mb-2">Average Review Time</h2>
-                <p
-                  className={`text-4xl font-bold ${
-                    avgReviewTime > 20
-                      ? "text-red-500"
-                      : avgReviewTime > 10
-                      ? "text-amber-500"
-                      : "text-indigo-600"
-                  }`}
-                >
-                  {avgReviewTime > 0 ? `${avgReviewTime} mins` : "N/A"}
+          {/* Flag Trend */}
+          <Panel className="p-6">
+            <SectionHeading>Flag Trend — {monthYear}</SectionHeading>
+            <ResponsiveContainer width="100%" height={240}>
+              <BarChart data={flagTrend} margin={{ top: 4, right: 8, left: -10, bottom: 32 }}>
+                <defs>
+                  <linearGradient id="barGrad" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%"   stopColor="#818cf8" />
+                    <stop offset="100%" stopColor="#4f46e5" />
+                  </linearGradient>
+                </defs>
+                <CartesianGrid vertical={false} stroke="#e2e8f0" strokeDasharray="4 4" />
+                <XAxis
+                  dataKey="day"
+                  tick={{ fill: "#94a3b8", fontSize: 11 }}
+                  axisLine={false} tickLine={false}
+                  label={{ value: "Day", position: "insideBottom", offset: -18, fill: "#94a3b8", fontSize: 13 }}
+                />
+                <YAxis 
+                  tick={{ fill: "#94a3b8", fontSize: 11 }} 
+                  axisLine={false} tickLine={false} 
+                  allowDecimals={false}
+                   label={{ 
+                      value: "Flags", 
+                      angle: -90, 
+                      position: "insideLeft",  
+                      offset: 20,             
+                      style: { textAnchor: "middle", fill: "#9CA3AF", fontSize: 13 }
+                    }}/> 
+                <Tooltip content={<CustomTooltip />} cursor={{ fill: "rgba(99,102,241,0.07)" }} />
+                <Bar dataKey="count" fill="url(#barGrad)" radius={[4, 4, 0, 0]} maxBarSize={18} />
+              </BarChart>
+            </ResponsiveContainer>
+          </Panel>
+
+          {/* Avg Review Time Ring */}
+          <Panel className="p-6 flex flex-col items-center justify-center">
+            <SectionHeading>Average Review Time</SectionHeading>
+            <div className="relative flex items-center justify-center mt-2">
+              <svg width="160" height="160">
+                <circle cx="80" cy="80" r="62" fill="none" stroke="#e2e8f0" strokeWidth="10" className="dark:[stroke:#334155]" />
+                <circle
+                  cx="80" cy="80" r="62" fill="none"
+                  stroke={reviewStroke} strokeWidth="10" strokeLinecap="round"
+                  strokeDasharray={`${Math.min((avgReviewTime / 30) * 390, 390)} 390`}
+                  transform="rotate(-90 80 80)"
+                  style={{ filter: `drop-shadow(0 0 6px ${reviewStroke})`, transition: "stroke-dasharray 0.8s ease" }}
+                />
+              </svg>
+              <div className="absolute text-center">
+                <p className={`text-3xl font-extrabold ${reviewAccent}`}>
+                  {avgReviewTime > 0 ? avgReviewTime : "—"}
                 </p>
-              </CardContent>
-            </Card>
-          </div>
+                <p className="text-xs text-slate-400 mt-1">{avgReviewTime > 0 ? "minutes" : "No data"}</p>
+              </div>
+            </div>
+            {reviewStatus && (
+              <p className={`mt-4 text-sm font-semibold ${reviewAccent}`}>{reviewStatus}</p>
+            )}
+          </Panel>
         </div>
 
-        {/* Risk */}
+        {/* ── Risk Analysis ───────────────────────────── */}
         <div>
-          <h1 className="text-2xl font-bold mb-4">Risk Analysis</h1>
-
+          <SectionHeading>Risk Analysis</SectionHeading>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <Card className="bg-white dark:bg-gray-800 shadow-sm rounded-2xl">
-              <CardContent>
-                <h2 className="text-lg font-semibold mb-2">Top Flagged Users</h2>
-                <ul>
-                  {topUsers.map((user, i) => (
-                    <li key={i} className="flex justify-between py-2 border-b dark:border-gray-700">
-                      <span>{user.name}</span>
-                      <span className="font-semibold">{user.count}</span>
-                    </li>
-                  ))}
-                </ul>
-              </CardContent>
-            </Card>
 
-            <Card className="bg-white dark:bg-gray-800 shadow-sm rounded-2xl">
-              <CardContent>
-                <h2 className="text-lg font-semibold mb-2">Top Flagged Content</h2>
-                <ul>
-                  {topContent.map((c, i) => (
-                    <li key={i} className="flex justify-between py-2 border-b dark:border-gray-700">
-                      <span>{c.name}</span>
-                      <span className="font-semibold">{c.count}</span>
-                    </li>
-                  ))}
-                </ul>
-              </CardContent>
-            </Card>
+            <Panel className="p-6">
+              <p className="text-xs font-semibold uppercase tracking-widest text-slate-400 mb-4">Top Flagged Users</p>
+              {topUsers.map((user, i) => (
+                <div key={i} className={`flex items-center justify-between py-3 ${i < topUsers.length - 1 ? "border-b border-slate-100 dark:border-slate-700" : ""}`}>
+                  <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 rounded-full bg-gradient-to-br from-indigo-400 to-indigo-600 flex items-center justify-center text-white text-xs font-bold">
+                      {user.name[0].toUpperCase()}
+                    </div>
+                    <span className="text-sm text-slate-700 dark:text-slate-300">{user.name}</span>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <div
+                      className="h-1.5 rounded-full bg-gradient-to-r from-indigo-400 to-indigo-600"
+                      style={{ width: `${(user.count / (topUsers[0]?.count || 1)) * 80}px` }}
+                    />
+                    <span className="text-sm font-bold text-indigo-500 w-6 text-right">{user.count}</span>
+                  </div>
+                </div>
+              ))}
+            </Panel>
+
+            <Panel className="p-6">
+              <p className="text-xs font-semibold uppercase tracking-widest text-slate-400 mb-4">Top Flagged Content</p>
+              {topContent.map((c, i) => (
+                <div key={i} className={`flex items-center justify-between py-3 ${i < topContent.length - 1 ? "border-b border-slate-100 dark:border-slate-700" : ""}`}>
+                  <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 rounded-lg bg-slate-100 dark:bg-slate-700 flex items-center justify-center text-base">📄</div>
+                    <span className="text-sm text-slate-700 dark:text-slate-300">{c.name}</span>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <div
+                      className="h-1.5 rounded-full bg-gradient-to-r from-pink-400 to-pink-600"
+                      style={{ width: `${(c.count / (topContent[0]?.count || 1)) * 80}px` }}
+                    />
+                    <span className="text-sm font-bold text-pink-500 w-6 text-right">{c.count}</span>
+                  </div>
+                </div>
+              ))}
+            </Panel>
           </div>
         </div>
 
-        {/* Audit */}
+        {/* ── Audit Logs ──────────────────────────────── */}
         <div>
-          <h1 className="text-2xl font-bold mb-4">Audit Logs</h1>
-
-          <Card className="bg-white dark:bg-gray-800 shadow-sm rounded-2xl">
-            <CardContent>
-              <table className="w-full text-left">
-                <thead>
-                  <tr className="text-gray-500 dark:text-gray-400 text-sm">
-                    <th className="pb-2">Admin</th>
-                    <th className="pb-2">Action</th>
-                    <th className="pb-2">Target</th>
-                    <th className="pb-2">Time</th>
-                  </tr>
-                </thead>
-
-                <tbody>
-                  {auditLogs.map((log, i) => (
-                    <tr key={i} className="border-t dark:border-gray-700">
-                      <td className="py-2">{log.admin}</td>
-                      <td className="py-2">{log.action}</td>
-                      <td className="py-2">{log.targetId}</td>
-                      <td className="py-2">{log.time}</td>
-                    </tr>
+          <SectionHeading>Audit Logs</SectionHeading>
+          <Panel className="overflow-hidden">
+            <table className="w-full text-left">
+              <thead>
+                <tr className="bg-slate-50 dark:bg-slate-800 border-b border-slate-100 dark:border-slate-700">
+                  {["Admin", "Action", "Target ID", "Time"].map((h) => (
+                    <th key={h} className="px-5 py-3 text-xs font-semibold uppercase tracking-widest text-slate-400">
+                      {h}
+                    </th>
                   ))}
-                </tbody>
-              </table>
-            </CardContent>
-          </Card>
+                </tr>
+              </thead>
+              <tbody>
+                {auditLogs.map((log, i) => {
+                  const meta = actionMeta[log.action] ?? {
+                    color: "text-slate-400", bg: "bg-slate-100 dark:bg-slate-700", border: "border-slate-300 dark:border-slate-600",
+                  };
+                  return (
+                    <tr key={i} className="border-t border-slate-100 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800/80 transition-colors">
+                      <td className="px-5 py-3">
+                        <div className="flex items-center gap-3">
+                          <div className="w-7 h-7 rounded-full bg-gradient-to-br from-sky-400 to-sky-600 flex items-center justify-center text-white text-xs font-bold">
+                            {log.admin[0]}
+                          </div>
+                          <span className="text-sm text-slate-700 dark:text-slate-300">{log.admin}</span>
+                        </div>
+                      </td>
+                      <td className="px-5 py-3">
+                        <span className={`inline-block text-xs font-semibold tracking-wide border rounded-md px-2.5 py-1 ${meta.color} ${meta.bg} ${meta.border}`}>
+                          {log.action}
+                        </span>
+                      </td>
+                      <td className="px-5 py-3 text-sm text-slate-400">#{log.targetId}</td>
+                      <td className="px-5 py-3 text-sm text-slate-400">{log.time}</td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </Panel>
         </div>
 
       </div>
