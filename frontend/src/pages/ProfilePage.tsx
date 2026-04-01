@@ -245,15 +245,7 @@ const ProfilePage = () => {
               </div>
               <Progress value={stats.lessonsEnrolled ? (stats.lessonsCompleted / stats.lessonsEnrolled) * 100 : 0} />
             </div>
-            <div className="grid grid-cols-2 gap-4 text-sm sm:grid-cols-4">
-              <div>
-                <p className="text-muted-foreground">Quizzes Taken</p>
-                <p className="font-semibold">{stats.quizzesTaken}</p>
-              </div>
-              <div>
-                <p className="text-muted-foreground">Hours Learned</p>
-                <p className="font-semibold">{stats.hoursLearned}</p>
-              </div>
+            <div className="grid grid-cols-2 gap-4 text-sm sm:grid-cols-2">
               <div>
                 <p className="text-muted-foreground">Longest Streak</p>
                 <p className="font-semibold">{profile.longest_streak} days</p>

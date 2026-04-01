@@ -101,6 +101,7 @@ Audit source: controller mappings in `src/main/java/com/rotiprata/api/*Controlle
 - `PUT /admin/content/{contentId}/reject`
 - `GET /admin/flags`
 - `PUT /admin/flags/{flagId}/resolve`
+- `PUT /admin/flags/{flagId}/take-down`
 
 ### Admin Lessons and Quiz Builder (`LessonController`)
 - `GET /admin/lessons`
@@ -268,6 +269,7 @@ Audit source: controller mappings in `src/main/java/com/rotiprata/api/*Controlle
 - `PUT /admin/content/{id}` -> implemented
 - `PUT /admin/content/{id}/reject` -> implemented
 - `PUT /admin/flags/{id}/resolve` -> implemented
+- `PUT /admin/flags/{id}/take-down` -> implemented
 - `GET /admin/lessons` -> implemented
 - `GET /admin/lessons/{id}` -> implemented
 - `PUT /admin/lessons/{id}/move-category` -> implemented

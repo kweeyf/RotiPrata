@@ -7,6 +7,7 @@ import com.rotiprata.domain.AppRole;
 import com.rotiprata.domain.Content;
 import com.rotiprata.domain.ContentTag;
 import com.rotiprata.infrastructure.supabase.SupabaseAdminRestClient;
+import java.util.ArrayList;
 import java.time.LocalDate;
 import java.time.OffsetDateTime;
 import java.util.LinkedHashSet;
@@ -32,10 +33,16 @@ public class AdminService {
     private static final int MAX_TAG = 30;
 
     private final SupabaseAdminRestClient supabaseAdminRestClient;
+    private final ContentCreatorEnrichmentService contentCreatorEnrichmentService;
     private final UserService userService;
 
-    public AdminService(SupabaseAdminRestClient supabaseAdminRestClient, UserService userService) {
+    public AdminService(
+        SupabaseAdminRestClient supabaseAdminRestClient,
+        ContentCreatorEnrichmentService contentCreatorEnrichmentService,
+        UserService userService
+    ) {
         this.supabaseAdminRestClient = supabaseAdminRestClient;
+        this.contentCreatorEnrichmentService = contentCreatorEnrichmentService;
         this.userService = userService;
     }
 
@@ -117,15 +124,17 @@ public class AdminService {
 
     public List<Map<String, Object>> getOpenFlags(UUID adminUserId, String accessToken) {
         requireAdmin(adminUserId, accessToken);
-        return supabaseAdminRestClient.getList(
+        List<Map<String, Object>> flags = supabaseAdminRestClient.getList(
             "content_flags",
             buildQuery(Map.of(
-                "select", "*",
+                "select", "*,content:content_id(*,content_tags(tag))",
                 "status", "eq.pending",
                 "order", "created_at.desc"
             )),
             MAP_LIST
         );
+        attachFlagContentCreators(flags);
+        return flags;
     }
 
     public void resolveFlag(UUID adminUserId, UUID flagId, String accessToken) {
@@ -143,6 +152,45 @@ public class AdminService {
         if (updated.isEmpty()) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Flag not found");
         }
+    }
+
+    public void takeDownFlag(UUID adminUserId, UUID flagId, String feedback, String accessToken) {
+        String sanitized = sanitizeText(feedback, MAX_LONG_TEXT);
+        if (sanitized == null || sanitized.isBlank()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Takedown reason is required");
+        }
+        requireAdmin(adminUserId, accessToken);
+
+        Map<String, Object> flag = getPendingFlag(flagId);
+        UUID contentId = parseUuid(flag.get("content_id"));
+        if (contentId == null) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Flag content not found");
+        }
+
+        List<Map<String, Object>> updated = patchContentReview(
+            contentId,
+            List.of("rejected"),
+            sanitized,
+            adminUserId
+        );
+        if (updated.isEmpty()) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Content not found");
+        }
+
+        OffsetDateTime resolvedAt = OffsetDateTime.now();
+        supabaseAdminRestClient.patchList(
+            "content_flags",
+            buildQuery(Map.of(
+                "content_id", "eq." + contentId,
+                "status", "eq.pending"
+            )),
+            Map.of(
+                "status", "resolved",
+                "resolved_by", adminUserId,
+                "resolved_at", resolvedAt
+            ),
+            MAP_LIST
+        );
     }
 
     public AdminStatsResponse getStats(UUID adminUserId, String accessToken) {
@@ -185,6 +233,50 @@ public class AdminService {
 
     private int count(String table, String query) {
         return supabaseAdminRestClient.getList(table, query, MAP_LIST).size();
+    }
+
+    private Map<String, Object> getPendingFlag(UUID flagId) {
+        List<Map<String, Object>> rows = supabaseAdminRestClient.getList(
+            "content_flags",
+            buildQuery(Map.of(
+                "select", "id,content_id,status",
+                "id", "eq." + flagId,
+                "limit", "1"
+            )),
+            MAP_LIST
+        );
+        if (rows.isEmpty()) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Flag not found");
+        }
+        Map<String, Object> flag = rows.get(0);
+        String status = String.valueOf(flag.get("status"));
+        if (!"pending".equalsIgnoreCase(status)) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "Flag already resolved");
+        }
+        return flag;
+    }
+
+    private void attachFlagContentCreators(List<Map<String, Object>> flags) {
+        if (flags == null || flags.isEmpty()) {
+            return;
+        }
+
+        List<Map<String, Object>> contentItems = new ArrayList<>();
+        for (Map<String, Object> flag : flags) {
+            if (flag == null) {
+                continue;
+            }
+            Object content = flag.get("content");
+            if (content instanceof Map<?, ?> contentMap) {
+                @SuppressWarnings("unchecked")
+                Map<String, Object> typedContent = (Map<String, Object>) contentMap;
+                contentItems.add(typedContent);
+            }
+        }
+
+        if (!contentItems.isEmpty()) {
+            contentCreatorEnrichmentService.enrichWithCreatorProfiles(contentItems);
+        }
     }
 
     private List<Map<String, Object>> patchContentReview(
@@ -309,5 +401,16 @@ public class AdminService {
             return collapsed.substring(0, maxLength);
         }
         return collapsed;
+    }
+
+    private UUID parseUuid(Object value) {
+        if (value == null) {
+            return null;
+        }
+        try {
+            return UUID.fromString(value.toString());
+        } catch (RuntimeException ex) {
+            return null;
+        }
     }
 }

@@ -58,6 +58,10 @@ type FloatingHeart = {
   driftX: number;
 };
 
+const TAP_MOVEMENT_SLOP = 12;
+const LEARN_MORE_SWIPE_THRESHOLD = 72;
+const LEARN_MORE_MAX_VERTICAL_DRIFT = 48;
+
 export function FeedCard({
   content,
   isActive = false,
@@ -94,6 +98,7 @@ export function FeedCard({
   const [isBuffering, setIsBuffering] = useState(false);
   const lastTapRef = useRef(0);
   const singleTapTimerRef = useRef<number | null>(null);
+  const touchStartRef = useRef<{ x: number; y: number } | null>(null);
 
   const clearSingleTapTimer = () => {
     if (singleTapTimerRef.current) {
@@ -183,6 +188,32 @@ export function FeedCard({
       return;
     }
 
+    const touchStart = touchStartRef.current;
+    touchStartRef.current = null;
+
+    if (touchStart) {
+      const deltaX = touch.clientX - touchStart.x;
+      const deltaY = touch.clientY - touchStart.y;
+      const absDeltaX = Math.abs(deltaX);
+      const absDeltaY = Math.abs(deltaY);
+
+      if (
+        deltaX <= -LEARN_MORE_SWIPE_THRESHOLD &&
+        absDeltaY <= LEARN_MORE_MAX_VERTICAL_DRIFT &&
+        absDeltaX > absDeltaY
+      ) {
+        clearSingleTapTimer();
+        onMediaInteraction?.();
+        onLearnMoreClick?.();
+        return;
+      }
+
+      if (absDeltaX > TAP_MOVEMENT_SLOP || absDeltaY > TAP_MOVEMENT_SLOP) {
+        clearSingleTapTimer();
+        return;
+      }
+    }
+
     onMediaInteraction?.();
     const now = Date.now();
     if (now - lastTapRef.current < 300) {
@@ -215,7 +246,7 @@ export function FeedCard({
           <FeedVideoPlayer
             sourceUrl={streamUrl}
             showPoster={false}
-            className="w-full h-full object-contain object-center"
+            className="h-full w-full object-contain object-top"
             preload={preload}
             isActive={isActive}
             isPaused={isPaused}
@@ -251,6 +282,14 @@ export function FeedCard({
         className="absolute inset-0 bg-black flex items-center justify-center overflow-hidden"
         onClick={handleMediaClick}
         onDoubleClick={handleMediaDoubleClick}
+        onTouchStart={(event) => {
+          const touch = event.touches[0];
+          if (!touch) {
+            touchStartRef.current = null;
+            return;
+          }
+          touchStartRef.current = { x: touch.clientX, y: touch.clientY };
+        }}
         onTouchEnd={handleMediaTouchEnd}
       >
         {renderBackgroundMedia()}

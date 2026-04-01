@@ -12,6 +12,7 @@ import {
   Dialog,
   DialogContent,
   DialogDescription,
+  DialogFooter,
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
@@ -39,6 +40,7 @@ import {
   fetchContentFlags,
   fetchModerationQueue,
   fetchTags,
+  takeDownFlag,
   updateAdminContent,
   rejectContent,
   resolveFlag,
@@ -55,8 +57,16 @@ const MAX_LONG_TEXT = 500;
 const MAX_OLDER_REFERENCE = 160;
 const MAX_TAG = 30;
 
+const stripControlCharacters = (value: string) =>
+  Array.from(value)
+    .filter((character) => {
+      const code = character.charCodeAt(0);
+      return code > 31 && code !== 127;
+    })
+    .join('');
+
 const sanitizeInputValue = (value: string, maxLength: number) => {
-  const cleaned = value.replace(/[\u0000-\u001F\u007F]/g, '');
+  const cleaned = stripControlCharacters(value);
   if (maxLength > 0 && cleaned.length > maxLength) {
     return cleaned.slice(0, maxLength);
   }
@@ -71,6 +81,20 @@ const normalizeText = (value: string, maxLength: number) => {
 const sanitizeTag = (value: string) => {
   const trimmed = value.trim().replace(/^#/, '');
   return normalizeText(trimmed, MAX_TAG);
+};
+
+const formatContentStatus = (status?: string | null) => {
+  switch ((status ?? '').toLowerCase()) {
+    case 'approved':
+    case 'accepted':
+      return 'Approved';
+    case 'pending':
+      return 'Pending';
+    case 'rejected':
+      return 'Taken down';
+    default:
+      return status ?? 'Unknown';
+  }
 };
 
 type ContentQuizDraftQuestion = {
@@ -131,6 +155,11 @@ const AdminDashboard = () => {
   const [moderationQueue, setModerationQueue] = useState<(ModerationQueueItem & { content: Content })[]>([]);
   const [flags, setFlags] = useState<ContentFlag[]>([]);
   const [selectedModerationItem, setSelectedModerationItem] = useState<(ModerationQueueItem & { content: Content }) | null>(null);
+  const [selectedFlag, setSelectedFlag] = useState<ContentFlag | null>(null);
+  const [flagTakeDownTarget, setFlagTakeDownTarget] = useState<ContentFlag | null>(null);
+  const [flagTakeDownReason, setFlagTakeDownReason] = useState('');
+  const [flagTakeDownAttempted, setFlagTakeDownAttempted] = useState(false);
+  const [isTakingDownFlag, setIsTakingDownFlag] = useState(false);
   const [categories, setCategories] = useState<Category[]>([]);
   const [editForm, setEditForm] = useState({
     title: '',
@@ -353,8 +382,41 @@ const AdminDashboard = () => {
     try {
       await resolveFlag(flagId);
       setFlags((items) => items.filter((flag) => flag.id !== flagId));
+      setSelectedFlag((current) => (current?.id === flagId ? null : current));
+      setFlagTakeDownTarget((current) => (current?.id === flagId ? null : current));
     } catch (error) {
       console.warn('Resolve flag failed', error);
+    }
+  };
+
+  const handleOpenFlagTakeDown = (flag: ContentFlag) => {
+    setSelectedFlag(null);
+    setFlagTakeDownTarget(flag);
+    setFlagTakeDownReason('');
+    setFlagTakeDownAttempted(false);
+  };
+
+  const handleConfirmFlagTakeDown = async () => {
+    if (!flagTakeDownTarget) {
+      return;
+    }
+    const feedback = normalizeText(flagTakeDownReason, MAX_LONG_TEXT);
+    if (!feedback) {
+      setFlagTakeDownAttempted(true);
+      return;
+    }
+    try {
+      setIsTakingDownFlag(true);
+      await takeDownFlag(flagTakeDownTarget.id, feedback);
+      setFlags((items) => items.filter((flag) => flag.content_id !== flagTakeDownTarget.content_id));
+      setSelectedFlag((current) => (current?.content_id === flagTakeDownTarget.content_id ? null : current));
+      setFlagTakeDownTarget(null);
+      setFlagTakeDownReason('');
+      setFlagTakeDownAttempted(false);
+    } catch (error) {
+      console.warn('Flag take down failed', error);
+    } finally {
+      setIsTakingDownFlag(false);
     }
   };
 
@@ -729,23 +791,50 @@ const AdminDashboard = () => {
                   </div>
                 ) : (
                   flags.map((flag) => (
-                    <div
-                      key={flag.id}
-                      className="flex items-start gap-4 p-4 rounded-lg"
-                    >
+                    <div key={flag.id} className="flex items-start gap-4 rounded-lg border border-border/70 p-4">
+                      {flag.content?.thumbnail_url ? (
+                        <img
+                          src={flag.content.thumbnail_url}
+                          alt={flag.content.title}
+                          className="h-20 w-14 rounded-md object-cover bg-muted"
+                        />
+                      ) : (
+                        <div className="flex h-20 w-14 items-center justify-center rounded-md bg-muted text-xs text-muted-foreground">
+                          {flag.content?.content_type ?? 'post'}
+                        </div>
+                      )}
                       <div className="flex-1">
-                        <div className="flex items-center gap-2 mb-1">
+                        <div className="mb-1 flex flex-wrap items-center gap-2">
                           <Badge variant="destructive">{flag.reason}</Badge>
+                          {flag.content?.content_type ? (
+                            <Badge variant="outline" className="capitalize">
+                              {flag.content.content_type}
+                            </Badge>
+                          ) : null}
+                          {flag.content?.status ? (
+                            <Badge variant="secondary">{formatContentStatus(flag.content.status)}</Badge>
+                          ) : null}
                           <span className="text-xs text-muted-foreground">
                             {new Date(flag.created_at).toLocaleDateString()}
                           </span>
                         </div>
-                        <p className="text-sm text-muted-foreground">{flag.description}</p>
+                        <p className="font-medium">{flag.content?.title ?? `Content ${flag.content_id}`}</p>
+                        <p className="text-sm text-muted-foreground">
+                          Creator: @{flag.content?.creator?.display_name ?? 'anonymous'}
+                        </p>
+                        {flag.description ? (
+                          <p className="mt-2 text-sm text-muted-foreground">Reporter note: {flag.description}</p>
+                        ) : (
+                          <p className="mt-2 text-sm text-muted-foreground">No additional reporter note.</p>
+                        )}
                       </div>
-                      <div className="flex gap-2">
-                        <Button size="sm" variant="outline">
+                      <div className="flex gap-2 self-start">
+                        <Button size="sm" variant="outline" onClick={() => setSelectedFlag(flag)}>
                           <Eye className="h-4 w-4 mr-1" />
                           View
+                        </Button>
+                        <Button size="sm" variant="destructive" onClick={() => handleOpenFlagTakeDown(flag)}>
+                          Take down
                         </Button>
                         <Button size="sm" onClick={() => handleResolveFlag(flag.id)}>
                           Resolve
@@ -1242,6 +1331,158 @@ const AdminDashboard = () => {
                 Reject
               </Button>
             </div>
+          </DialogContent>
+        </Dialog>
+
+        <Dialog
+          open={selectedFlag !== null}
+          onOpenChange={(open) => {
+            if (!open) {
+              setSelectedFlag(null);
+            }
+          }}
+        >
+          <DialogContent className="max-w-2xl">
+            <DialogHeader>
+              <DialogTitle>Flag Review</DialogTitle>
+              <DialogDescription>
+                Review the reported post, reporter context, and moderation action.
+              </DialogDescription>
+            </DialogHeader>
+            {selectedFlag ? (
+              <div className="grid gap-6">
+                <div className="grid gap-3 rounded-lg border border-border/70 p-4">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <Badge variant="destructive">{selectedFlag.reason}</Badge>
+                    {selectedFlag.content?.content_type ? (
+                      <Badge variant="outline" className="capitalize">
+                        {selectedFlag.content.content_type}
+                      </Badge>
+                    ) : null}
+                    {selectedFlag.content?.status ? (
+                      <Badge variant="secondary">{formatContentStatus(selectedFlag.content.status)}</Badge>
+                    ) : null}
+                  </div>
+                  <div>
+                    <p className="text-base font-semibold">
+                      {selectedFlag.content?.title ?? `Content ${selectedFlag.content_id}`}
+                    </p>
+                    <p className="text-sm text-muted-foreground">
+                      Creator: @{selectedFlag.content?.creator?.display_name ?? 'anonymous'}
+                    </p>
+                    <p className="text-sm text-muted-foreground">
+                      Reported on {new Date(selectedFlag.created_at).toLocaleString()}
+                    </p>
+                  </div>
+                  {selectedFlag.description ? (
+                    <div className="rounded-md bg-muted px-3 py-2 text-sm text-muted-foreground">
+                      Reporter note: {selectedFlag.description}
+                    </div>
+                  ) : null}
+                  <div className="rounded-lg border border-border/70 bg-muted/30 p-3">
+                    {selectedFlag.content?.content_type === 'video' && selectedFlag.content.media_url ? (
+                      <video
+                        controls
+                        src={selectedFlag.content.media_url}
+                        className="w-full max-h-[360px] rounded-md bg-black"
+                      />
+                    ) : selectedFlag.content?.media_url ? (
+                      <img
+                        src={selectedFlag.content.media_url}
+                        alt={selectedFlag.content.title}
+                        className="w-full max-h-[360px] rounded-md object-contain bg-muted"
+                      />
+                    ) : selectedFlag.content?.thumbnail_url ? (
+                      <img
+                        src={selectedFlag.content.thumbnail_url}
+                        alt={selectedFlag.content.title ?? 'Flagged content preview'}
+                        className="w-full max-h-[360px] rounded-md object-contain bg-muted"
+                      />
+                    ) : (
+                      <p className="text-sm text-muted-foreground">No media preview available.</p>
+                    )}
+                  </div>
+                </div>
+
+                <DialogFooter>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => {
+                      void handleResolveFlag(selectedFlag.id);
+                    }}
+                  >
+                    Resolve
+                  </Button>
+                  <Button type="button" variant="destructive" onClick={() => handleOpenFlagTakeDown(selectedFlag)}>
+                    Take down
+                  </Button>
+                </DialogFooter>
+              </div>
+            ) : null}
+          </DialogContent>
+        </Dialog>
+
+        <Dialog
+          open={flagTakeDownTarget !== null}
+          onOpenChange={(open) => {
+            if (isTakingDownFlag) {
+              return;
+            }
+            if (!open) {
+              setFlagTakeDownTarget(null);
+              setFlagTakeDownReason('');
+              setFlagTakeDownAttempted(false);
+            }
+          }}
+        >
+          <DialogContent className="max-w-lg">
+            <DialogHeader>
+              <DialogTitle>Take Down Flagged Content</DialogTitle>
+              <DialogDescription>
+                This will mark the post as taken down and show your feedback to the creator in their Posted videos.
+              </DialogDescription>
+            </DialogHeader>
+            <div className="grid gap-2">
+              <Label htmlFor="flag-takedown-reason">Reason for creator</Label>
+              <Textarea
+                id="flag-takedown-reason"
+                value={flagTakeDownReason}
+                onChange={(e) => setFlagTakeDownReason(sanitizeInputValue(e.target.value, MAX_LONG_TEXT))}
+                maxLength={MAX_LONG_TEXT}
+                rows={4}
+              />
+              {flagTakeDownAttempted && !normalizeText(flagTakeDownReason, MAX_LONG_TEXT) ? (
+                <p className="text-xs text-destructive">A takedown reason is required.</p>
+              ) : null}
+              <p className="text-xs text-muted-foreground">
+                {flagTakeDownReason.length}/{MAX_LONG_TEXT}
+              </p>
+            </div>
+            <DialogFooter>
+              <Button
+                type="button"
+                variant="outline"
+                disabled={isTakingDownFlag}
+                onClick={() => {
+                  setFlagTakeDownTarget(null);
+                  setFlagTakeDownReason('');
+                  setFlagTakeDownAttempted(false);
+                }}
+              >
+                Cancel
+              </Button>
+              <Button
+                type="button"
+                variant="destructive"
+                disabled={isTakingDownFlag}
+                onClick={() => {
+                  void handleConfirmFlagTakeDown();
+                }}
+              >
+                {isTakingDownFlag ? 'Taking down...' : 'Take down'}
+              </Button>
+            </DialogFooter>
           </DialogContent>
         </Dialog>
       </div>

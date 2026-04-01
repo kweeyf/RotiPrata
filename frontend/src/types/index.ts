@@ -530,6 +530,7 @@ export interface ContentFlag {
   resolved_by: string | null;
   resolved_at: string | null;
   created_at: string;
+  content?: Content;
 }
 
 export interface ModerationQueueItem {

@@ -932,7 +932,7 @@ export const fetchUserRoles = () =>
 export const fetchAdminStats = () =>
   withMockFallback("admin-stats", () => mockAdminStats, () => apiGet(`/admin/stats`));
 
-const normalizeModerationQueueTags = <T extends { content?: Record<string, unknown> | null }>(
+const normalizeNestedContentTags = <T extends { content?: Record<string, unknown> | null }>(
   items: T[]
 ): T[] =>
   items.map((item) => {
@@ -971,12 +971,16 @@ export const fetchModerationQueue = () =>
     () => mockModerationQueue,
     () =>
       apiGet<(typeof mockModerationQueue)[number][]>(`/admin/moderation-queue`).then(
-        normalizeModerationQueueTags
+        normalizeNestedContentTags
       )
   );
 
 export const fetchContentFlags = () =>
-  withMockFallback("admin-flags", () => mockFlags, () => apiGet<ContentFlag[]>(`/admin/flags`));
+  withMockFallback(
+    "admin-flags",
+    () => mockFlags,
+    () => apiGet<ContentFlag[]>(`/admin/flags`).then(normalizeNestedContentTags)
+  );
 
 export const approveContent = (contentId: string) => apiPut<void>(`/admin/content/${contentId}/approve`);
 
@@ -987,6 +991,9 @@ export const rejectContent = (contentId: string, feedback?: string) =>
   apiPut<void>(`/admin/content/${contentId}/reject`, { feedback });
 
 export const resolveFlag = (flagId: string) => apiPut<void>(`/admin/flags/${flagId}/resolve`);
+
+export const takeDownFlag = (flagId: string, feedback?: string) =>
+  apiPut<void>(`/admin/flags/${flagId}/take-down`, { feedback });
 
 
 export const fetchAdminLessons = () =>

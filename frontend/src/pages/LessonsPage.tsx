@@ -15,6 +15,8 @@ const PATH_CENTER_X = PATH_WIDTH / 2;
 const NODE_CONNECTOR_GAP = 42;
 const LESSON_LABEL_HEIGHT = 32;
 const UNCATEGORIZED_KEY = '__uncategorized__';
+const DEFAULT_ACTIVE_COLOR = '#629dff';
+const CULTURAL_REFERENCE_ACCENT = '#c28a1f';
 
 const nodeOffsetX = (index: number) => (index % 2 === 0 ? -HORIZONTAL_SWING : HORIZONTAL_SWING);
 
@@ -24,6 +26,37 @@ const resolveLessonLabel = (title: string | null | undefined, index: number) => 
 };
 
 const categoryKey = (category: LessonHubCategory) => category.categoryId ?? UNCATEGORIZED_KEY;
+
+const resolveCategoryAccent = (category: LessonHubCategory | null | undefined) => {
+  if (!category) {
+    return DEFAULT_ACTIVE_COLOR;
+  }
+  if (category.type === 'cultural_reference') {
+    return CULTURAL_REFERENCE_ACCENT;
+  }
+  return category.color ?? DEFAULT_ACTIVE_COLOR;
+};
+
+const getReadableTextColor = (hexColor: string) => {
+  const normalized = hexColor.replace('#', '').trim();
+  const expanded = normalized.length === 3
+    ? normalized
+        .split('')
+        .map((char) => `${char}${char}`)
+        .join('')
+    : normalized;
+
+  if (expanded.length !== 6) {
+    return '#ffffff';
+  }
+
+  const red = parseInt(expanded.slice(0, 2), 16);
+  const green = parseInt(expanded.slice(2, 4), 16);
+  const blue = parseInt(expanded.slice(4, 6), 16);
+  const luminance = (red * 299 + green * 587 + blue * 114) / 1000;
+
+  return luminance >= 170 ? '#1f2937' : '#ffffff';
+};
 
 const DottedPath = ({ lessonCount, strokeColor }: { lessonCount: number; strokeColor: string }) => {
   if (lessonCount < 2) return null;
@@ -199,7 +232,7 @@ const LessonsPage = () => {
     [hub, selectedCategoryId]
   );
 
-  const activeColor = activeCategory?.color ?? '#629dff';
+  const activeColor = resolveCategoryAccent(activeCategory);
   const activeTitle = activeCategory?.name ?? 'Lesson Paths';
 
   return (
@@ -242,6 +275,7 @@ const LessonsPage = () => {
                 {hub.categories.map((category) => {
                   const key = categoryKey(category);
                   const isActive = key === categoryKey(activeCategory ?? category);
+                  const categoryAccent = resolveCategoryAccent(category);
                   return (
                     <Button
                       key={key}
@@ -250,9 +284,16 @@ const LessonsPage = () => {
                       onClick={() => setSelectedCategoryId(key)}
                       className={cn(
                         'rounded-full',
-                        isActive ? 'text-white' : 'text-mainAccent dark:text-white'
+                        !isActive && 'text-mainAccent dark:text-white'
                       )}
-                      style={isActive ? { backgroundColor: category.color ?? activeColor } : undefined}
+                      style={
+                        isActive
+                          ? {
+                              backgroundColor: categoryAccent,
+                              color: getReadableTextColor(categoryAccent),
+                            }
+                          : undefined
+                      }
                     >
                       {category.name}
                     </Button>

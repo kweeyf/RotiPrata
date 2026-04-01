@@ -111,4 +111,15 @@ public class AdminController {
         adminService.resolveFlag(adminUserId, flagId, SecurityUtils.getAccessToken());
         return ResponseEntity.noContent().build();
     }
+
+    @PutMapping("/flags/{flagId}/take-down")
+    public ResponseEntity<Void> takeDownFlag(
+        @AuthenticationPrincipal Jwt jwt,
+        @PathVariable UUID flagId,
+        @Valid @RequestBody RejectContentRequest request
+    ) {
+        UUID adminUserId = SecurityUtils.getUserId(jwt);
+        adminService.takeDownFlag(adminUserId, flagId, request.feedback(), SecurityUtils.getAccessToken());
+        return ResponseEntity.noContent().build();
+    }
 }
