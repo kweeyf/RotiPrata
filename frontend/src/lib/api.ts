@@ -2,6 +2,7 @@ import type {
   AdminAnalytics,
   AdminContentFlagReportPage,
   AdminContentFlagGroup,
+  AdminUserDetail,
   AdminLessonDraftResponse,
   AdminPublishLessonResult,
   AdminQuizQuestionDraft,
@@ -49,7 +50,7 @@ import {
   mockLessonStats,
 } from "@/mocks/lessons";
 import { buildMockLeaderboardResponse, mockProfile, mockProfileBadges, mockProfileCollections } from "@/mocks/profile";
-import { mockAdminAnalytics, mockAdminStats, mockAdminUsers, mockFlags, mockModerationQueue } from "@/mocks/admin";
+import { mockAdminAnalytics, mockAdminStats, mockAdminUserDetails, mockAdminUsers, mockFlags, mockModerationQueue } from "@/mocks/admin";
 import {
   mockAiSuggestions,
   mockBrowsingHistory,
@@ -969,6 +970,56 @@ export const updateAdminUserRole = (userId: string, role: AppRole) =>
     () => apiPut<AdminUserSummary>(`/admin/users/${userId}/role`, { role }),
     { allowAutoFallback: false }
   );
+
+export const fetchAdminUserDetail = (userId: string) =>
+  withMockFallback(
+    "admin-user-detail",
+    () => mockAdminUserDetails[userId] ?? {
+      summary: mockAdminUsers.find((user) => user.userId === userId) ?? mockAdminUsers[0],
+      suspendedUntil: null,
+      activity: {
+        postedContentCount: 0,
+        likedContentCount: 0,
+        savedContentCount: 0,
+        commentCount: 0,
+        enrolledLessonCount: 0,
+        completedLessonCount: 0,
+        badgeCount: 0,
+        browsingCount: 0,
+        searchCount: 0,
+        chatMessageCount: 0,
+      },
+      postedContent: [],
+      likedContent: [],
+      savedContent: [],
+      comments: [],
+      lessonProgress: [],
+      badges: [],
+      browsingHistory: [],
+      searchHistory: [],
+      chatHistory: [],
+    } satisfies AdminUserDetail,
+    () => apiGet<AdminUserDetail>(`/admin/users/${userId}`),
+    { allowAutoFallback: false }
+  );
+
+export const updateAdminUserStatus = (userId: string, status: "active" | "suspended") =>
+  withMockFallback(
+    "admin-user-status",
+    () => {
+      const target = mockAdminUsers.find((user) => user.userId === userId);
+      if (!target) {
+        throw new Error("User not found");
+      }
+      target.status = status;
+      return target;
+    },
+    () => apiPut<AdminUserSummary>(`/admin/users/${userId}/status`, { status }),
+    { allowAutoFallback: false }
+  );
+
+export const resetAdminUserLessonProgress = (userId: string, lessonId: string) =>
+  apiDelete<void>(`/admin/users/${userId}/lessons/${lessonId}/progress`);
 
 export const fetchAdminAnalytics = () =>
   withMockFallback(

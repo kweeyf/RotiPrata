@@ -31,7 +31,18 @@ import {
   X,
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
-import type { AdminContentFlagGroup, AdminContentFlagReport, Content, ModerationQueueItem, Category, QuizQuestion } from '@/types';
+import { toast } from '@/components/ui/sonner';
+import type {
+  AdminContentFlagGroup,
+  AdminContentFlagReport,
+  AdminUserDetail,
+  AdminUserSummary,
+  AppRole,
+  Category,
+  Content,
+  ModerationQueueItem,
+  QuizQuestion,
+} from '@/types';
 import {
   getFlagDescriptionCount,
   getFlagReasonSummary,
@@ -40,6 +51,9 @@ import {
 } from '@/pages/admin/flagModeration';
 import {
   approveContent,
+  deleteContentComment,
+  fetchAdminUserDetail,
+  fetchAdminUsers,
   fetchAdminStats,
   fetchCategories,
   fetchAdminContentQuiz,
@@ -47,8 +61,11 @@ import {
   fetchFlagReports,
   fetchModerationQueue,
   fetchTags,
+  resetAdminUserLessonProgress,
   takeDownFlag,
   updateAdminContent,
+  updateAdminUserRole,
+  updateAdminUserStatus,
   rejectContent,
   resolveFlag,
   saveAdminContentQuiz,
@@ -201,6 +218,15 @@ const AdminDashboard = () => {
   const [quizDirty, setQuizDirty] = useState(false);
   const [quizError, setQuizError] = useState<string | null>(null);
   const [hasAttemptedQuizSave, setHasAttemptedQuizSave] = useState(false);
+  const [adminUsers, setAdminUsers] = useState<AdminUserSummary[]>([]);
+  const [isUsersLoading, setIsUsersLoading] = useState(false);
+  const [selectedUser, setSelectedUser] = useState<AdminUserDetail | null>(null);
+  const [isUserDetailOpen, setIsUserDetailOpen] = useState(false);
+  const [isUserDetailLoading, setIsUserDetailLoading] = useState(false);
+  const [userActionKey, setUserActionKey] = useState<string | null>(null);
+  const [userContentRejectTarget, setUserContentRejectTarget] = useState<Content | null>(null);
+  const [userContentRejectReason, setUserContentRejectReason] = useState('');
+  const [userContentRejectAttempted, setUserContentRejectAttempted] = useState(false);
 
   const fieldErrors = {
     title: normalizeText(editForm.title, MAX_TITLE) ? '' : 'Title is required.',
@@ -246,6 +272,15 @@ const AdminDashboard = () => {
     () => flags.reduce((sum, flag) => sum + getFlagReportCount(flag), 0),
     [flags]
   );
+  const filteredUsers = useMemo(() => {
+    const normalized = searchQuery.trim().toLowerCase();
+    if (!normalized) {
+      return adminUsers;
+    }
+    return adminUsers.filter((user) =>
+      [user.displayName, user.email ?? '', user.userId].some((value) => value.toLowerCase().includes(normalized))
+    );
+  }, [adminUsers, searchQuery]);
 
   useEffect(() => {
     fetchAdminStats()
@@ -263,6 +298,12 @@ const AdminDashboard = () => {
     fetchCategories()
       .then(setCategories)
       .catch((error) => console.warn('Failed to load categories', error));
+
+    setIsUsersLoading(true);
+    fetchAdminUsers()
+      .then(setAdminUsers)
+      .catch((error) => console.warn('Failed to load admin users', error))
+      .finally(() => setIsUsersLoading(false));
   }, []);
 
   useEffect(() => {
@@ -612,6 +653,155 @@ const AdminDashboard = () => {
     }
   };
 
+  const upsertUserSummary = (summary: AdminUserSummary) => {
+    setAdminUsers((users) =>
+      users.map((user) => (user.userId === summary.userId ? summary : user))
+    );
+    setSelectedUser((current) =>
+      current && current.summary.userId === summary.userId
+        ? { ...current, summary }
+        : current
+    );
+  };
+
+  const loadUserDetail = async (userId: string, keepDialogOpen = true) => {
+    try {
+      setIsUserDetailLoading(true);
+      if (keepDialogOpen) {
+        setIsUserDetailOpen(true);
+      }
+      const detail = await fetchAdminUserDetail(userId);
+      setSelectedUser(detail);
+      return detail;
+    } catch (error) {
+      console.warn('Failed to load admin user detail', error);
+      toast('Failed to load user details', { position: 'bottom-center' });
+      if (!selectedUser) {
+        setIsUserDetailOpen(false);
+      }
+      return null;
+    } finally {
+      setIsUserDetailLoading(false);
+    }
+  };
+
+  const handleUpdateUserRole = async (userId: string, role: AppRole) => {
+    try {
+      setUserActionKey(`role:${userId}:${role}`);
+      const updated = await updateAdminUserRole(userId, role);
+      upsertUserSummary(updated);
+      await loadUserDetail(userId, false);
+      toast(`User role updated to ${role}`, { position: 'bottom-center' });
+    } catch (error) {
+      console.warn('Failed to update user role', error);
+      toast(error instanceof Error ? error.message : 'Failed to update user role', {
+        position: 'bottom-center',
+      });
+    } finally {
+      setUserActionKey(null);
+    }
+  };
+
+  const handleToggleUserStatus = async (user: AdminUserSummary) => {
+    const nextStatus = user.status === 'active' ? 'suspended' : 'active';
+    try {
+      setUserActionKey(`status:${user.userId}:${nextStatus}`);
+      const updated = await updateAdminUserStatus(user.userId, nextStatus);
+      upsertUserSummary(updated);
+      await loadUserDetail(user.userId, false);
+      toast(
+        nextStatus === 'suspended' ? 'User suspended' : 'User reactivated',
+        { position: 'bottom-center' }
+      );
+    } catch (error) {
+      console.warn('Failed to update user status', error);
+      toast(error instanceof Error ? error.message : 'Failed to update user status', {
+        position: 'bottom-center',
+      });
+    } finally {
+      setUserActionKey(null);
+    }
+  };
+
+  const handleResetLessonProgress = async (lessonId: string | null) => {
+    if (!selectedUser || !lessonId) {
+      return;
+    }
+    try {
+      setUserActionKey(`progress:${lessonId}`);
+      await resetAdminUserLessonProgress(selectedUser.summary.userId, lessonId);
+      const refreshed = await loadUserDetail(selectedUser.summary.userId, false);
+      if (refreshed) {
+        upsertUserSummary(refreshed.summary);
+      }
+      toast('Lesson progress reset', { position: 'bottom-center' });
+    } catch (error) {
+      console.warn('Failed to reset lesson progress', error);
+      toast(error instanceof Error ? error.message : 'Failed to reset lesson progress', {
+        position: 'bottom-center',
+      });
+    } finally {
+      setUserActionKey(null);
+    }
+  };
+
+  const handleDeleteUserComment = async (commentId: string, contentId: string | null) => {
+    if (!selectedUser || !contentId) {
+      return;
+    }
+    try {
+      setUserActionKey(`comment:${commentId}`);
+      await deleteContentComment(contentId, commentId);
+      setSelectedUser((current) =>
+        current
+          ? {
+              ...current,
+              comments: current.comments.filter((comment) => comment.id !== commentId),
+              activity: {
+                ...current.activity,
+                commentCount: Math.max(0, current.activity.commentCount - 1),
+              },
+            }
+          : current
+      );
+      toast('Comment removed', { position: 'bottom-center' });
+    } catch (error) {
+      console.warn('Failed to delete user comment', error);
+      toast(error instanceof Error ? error.message : 'Failed to delete comment', {
+        position: 'bottom-center',
+      });
+    } finally {
+      setUserActionKey(null);
+    }
+  };
+
+  const handleTakeDownUserContent = async () => {
+    if (!selectedUser || !userContentRejectTarget) {
+      return;
+    }
+    const feedback = normalizeText(userContentRejectReason, MAX_LONG_TEXT);
+    if (!feedback) {
+      setUserContentRejectAttempted(true);
+      return;
+    }
+    try {
+      setUserActionKey(`content:${userContentRejectTarget.id}`);
+      await rejectContent(userContentRejectTarget.id, feedback);
+      toast('Content taken down', { position: 'bottom-center' });
+      setUserContentRejectTarget(null);
+      setUserContentRejectReason('');
+      setUserContentRejectAttempted(false);
+      await loadUserDetail(selectedUser.summary.userId, false);
+    } catch (error) {
+      console.warn('Failed to take down user content', error);
+      toast(error instanceof Error ? error.message : 'Failed to take down content', {
+        position: 'bottom-center',
+      });
+    } finally {
+      setUserActionKey(null);
+    }
+  };
+
   return (
     <MainLayout>
       <div className="container max-w-6xl mx-auto px-4 py-6 md:py-8 pb-safe">
@@ -761,12 +951,14 @@ const AdminDashboard = () => {
                     Manage Categories
                   </Button>
                 </Link>
-                <Link to="/admin/users">
-                  <Button variant="outline" className="w-full h-auto py-4 flex-col">
-                    <Users className="h-6 w-6 mb-2" />
-                    Manage Users
-                  </Button>
-                </Link>
+                <Button
+                  variant="outline"
+                  className="w-full h-auto py-4 flex-col"
+                  onClick={() => setActiveTab('users')}
+                >
+                  <Users className="h-6 w-6 mb-2" />
+                  Manage Users
+                </Button>
                 <Link to="/admin/analytics">
                   <Button variant="outline" className="w-full h-auto py-4 flex-col">
                     <TrendingUp className="h-6 w-6 mb-2" />
@@ -933,16 +1125,481 @@ const AdminDashboard = () => {
                   </div>
                 </div>
               </CardHeader>
-              <CardContent>
-                <div className="text-center py-8 text-muted-foreground">
-                  <Users className="h-12 w-12 mx-auto mb-3" />
-                  <p>User management interface</p>
-                  <p className="text-sm">TODO: Implement user list with role management</p>
-                </div>
+              <CardContent className="space-y-4">
+                {isUsersLoading ? (
+                  <div className="flex items-center justify-center py-8 text-muted-foreground">
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Loading users...
+                  </div>
+                ) : filteredUsers.length === 0 ? (
+                  <div className="text-center py-8 text-muted-foreground">
+                    <Users className="h-12 w-12 mx-auto mb-3" />
+                    <p>No users match that search.</p>
+                  </div>
+                ) : (
+                  filteredUsers.map((user) => (
+                    <div
+                      key={user.userId}
+                      className="flex flex-col gap-4 rounded-lg border border-border/70 p-4 md:flex-row md:items-center md:justify-between"
+                    >
+                      <div className="min-w-0 flex-1">
+                        <div className="flex flex-wrap items-center gap-2">
+                          <p className="font-semibold">{user.displayName}</p>
+                          <Badge variant={user.status === 'active' ? 'secondary' : 'destructive'}>
+                            {user.status}
+                          </Badge>
+                          {user.roles.map((role) => (
+                            <Badge key={`${user.userId}-${role}`} variant="outline">
+                              {role}
+                            </Badge>
+                          ))}
+                        </div>
+                        <p className="text-sm text-muted-foreground">{user.email ?? user.userId}</p>
+                        <div className="mt-2 flex flex-wrap gap-3 text-xs text-muted-foreground">
+                          <span>XP {user.reputationPoints}</span>
+                          <span>Current streak {user.currentStreak}</span>
+                          <span>Hours learned {user.totalHoursLearned}</span>
+                          <span>
+                            Last active {user.lastActivityDate ? new Date(user.lastActivityDate).toLocaleDateString() : 'Unknown'}
+                          </span>
+                        </div>
+                      </div>
+                      <div className="flex flex-wrap gap-2">
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => {
+                            void loadUserDetail(user.userId);
+                          }}
+                        >
+                          <Eye className="mr-1 h-4 w-4" />
+                          Open
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          disabled={userActionKey === `role:${user.userId}:${user.roles.includes('admin') ? 'user' : 'admin'}`}
+                          onClick={() => {
+                            void handleUpdateUserRole(user.userId, user.roles.includes('admin') ? 'user' : 'admin');
+                          }}
+                        >
+                          {user.roles.includes('admin') ? 'Make User' : 'Make Admin'}
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant={user.status === 'active' ? 'destructive' : 'secondary'}
+                          disabled={userActionKey === `status:${user.userId}:${user.status === 'active' ? 'suspended' : 'active'}`}
+                          onClick={() => {
+                            void handleToggleUserStatus(user);
+                          }}
+                        >
+                          {user.status === 'active' ? 'Suspend' : 'Reactivate'}
+                        </Button>
+                      </div>
+                    </div>
+                  ))
+                )}
               </CardContent>
             </Card>
           </TabsContent>
         </Tabs>
+
+        <Dialog
+          open={isUserDetailOpen}
+          onOpenChange={(open) => {
+            setIsUserDetailOpen(open);
+            if (!open) {
+              setSelectedUser(null);
+              setUserContentRejectTarget(null);
+              setUserContentRejectReason('');
+              setUserContentRejectAttempted(false);
+            }
+          }}
+        >
+          <DialogContent className="max-w-6xl w-[95vw] p-0 overflow-hidden">
+            <div className="max-h-[85vh] overflow-y-auto">
+              <DialogHeader className="p-6">
+                <DialogTitle>User Management</DialogTitle>
+                <DialogDescription>
+                  Review account status, moderation footprint, and learning activity for a user.
+                </DialogDescription>
+              </DialogHeader>
+
+              {isUserDetailLoading ? (
+                <div className="flex items-center justify-center px-6 pb-8 text-muted-foreground">
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Loading user details...
+                </div>
+              ) : selectedUser ? (
+                <div className="grid gap-6 px-6 pb-6">
+                  <div className="grid gap-4 rounded-lg border border-border/70 p-4 lg:grid-cols-[1.6fr_1fr]">
+                    <div className="space-y-2">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <p className="text-xl font-semibold">{selectedUser.summary.displayName}</p>
+                        <Badge variant={selectedUser.summary.status === 'active' ? 'secondary' : 'destructive'}>
+                          {selectedUser.summary.status}
+                        </Badge>
+                        {selectedUser.summary.roles.map((role) => (
+                          <Badge key={`${selectedUser.summary.userId}-${role}`} variant="outline">
+                            {role}
+                          </Badge>
+                        ))}
+                      </div>
+                      <p className="text-sm text-muted-foreground">
+                        {selectedUser.summary.email ?? selectedUser.summary.userId}
+                      </p>
+                      <div className="grid gap-1 text-sm text-muted-foreground sm:grid-cols-2">
+                        <p>Created: {selectedUser.summary.createdAt ? new Date(selectedUser.summary.createdAt).toLocaleString() : 'Unknown'}</p>
+                        <p>Last sign in: {selectedUser.summary.lastSignInAt ? new Date(selectedUser.summary.lastSignInAt).toLocaleString() : 'Never'}</p>
+                        <p>Last active: {selectedUser.summary.lastActivityDate ? new Date(selectedUser.summary.lastActivityDate).toLocaleDateString() : 'Unknown'}</p>
+                        <p>Suspended until: {selectedUser.suspendedUntil ? new Date(selectedUser.suspendedUntil).toLocaleString() : 'Not suspended'}</p>
+                      </div>
+                    </div>
+                    <div className="flex flex-wrap gap-2 lg:justify-end">
+                      <Button
+                        type="button"
+                        variant="outline"
+                        disabled={userActionKey === `role:${selectedUser.summary.userId}:${selectedUser.summary.roles.includes('admin') ? 'user' : 'admin'}`}
+                        onClick={() => {
+                          void handleUpdateUserRole(
+                            selectedUser.summary.userId,
+                            selectedUser.summary.roles.includes('admin') ? 'user' : 'admin'
+                          );
+                        }}
+                      >
+                        {selectedUser.summary.roles.includes('admin') ? 'Make User' : 'Make Admin'}
+                      </Button>
+                      <Button
+                        type="button"
+                        variant={selectedUser.summary.status === 'active' ? 'destructive' : 'secondary'}
+                        disabled={userActionKey === `status:${selectedUser.summary.userId}:${selectedUser.summary.status === 'active' ? 'suspended' : 'active'}`}
+                        onClick={() => {
+                          void handleToggleUserStatus(selectedUser.summary);
+                        }}
+                      >
+                        {selectedUser.summary.status === 'active' ? 'Suspend Account' : 'Reactivate Account'}
+                      </Button>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-5">
+                    <Card>
+                      <CardContent className="p-4">
+                        <p className="text-xs text-muted-foreground">Posted</p>
+                        <p className="text-xl font-semibold">{selectedUser.activity.postedContentCount}</p>
+                      </CardContent>
+                    </Card>
+                    <Card>
+                      <CardContent className="p-4">
+                        <p className="text-xs text-muted-foreground">Comments</p>
+                        <p className="text-xl font-semibold">{selectedUser.activity.commentCount}</p>
+                      </CardContent>
+                    </Card>
+                    <Card>
+                      <CardContent className="p-4">
+                        <p className="text-xs text-muted-foreground">Lessons</p>
+                        <p className="text-xl font-semibold">{selectedUser.activity.enrolledLessonCount}</p>
+                      </CardContent>
+                    </Card>
+                    <Card>
+                      <CardContent className="p-4">
+                        <p className="text-xs text-muted-foreground">Completed</p>
+                        <p className="text-xl font-semibold">{selectedUser.activity.completedLessonCount}</p>
+                      </CardContent>
+                    </Card>
+                    <Card>
+                      <CardContent className="p-4">
+                        <p className="text-xs text-muted-foreground">Badges</p>
+                        <p className="text-xl font-semibold">{selectedUser.activity.badgeCount}</p>
+                      </CardContent>
+                    </Card>
+                  </div>
+
+                  <div className="grid gap-6 lg:grid-cols-2">
+                    <Card>
+                      <CardHeader>
+                        <CardTitle>Posted Content</CardTitle>
+                      </CardHeader>
+                      <CardContent className="space-y-3">
+                        {selectedUser.postedContent.length === 0 ? (
+                          <p className="text-sm text-muted-foreground">No posted content.</p>
+                        ) : (
+                          selectedUser.postedContent.map((content) => (
+                            <div key={content.id} className="rounded-lg border border-border/70 p-3">
+                              <div className="flex flex-wrap items-center justify-between gap-2">
+                                <div>
+                                  <p className="font-medium">{content.title}</p>
+                                  <p className="text-xs text-muted-foreground">
+                                    {content.content_type} · {content.status}
+                                  </p>
+                                </div>
+                                <Button
+                                  type="button"
+                                  size="sm"
+                                  variant="destructive"
+                                  disabled={content.status === 'rejected'}
+                                  onClick={() => {
+                                    setUserContentRejectTarget(content);
+                                    setUserContentRejectReason('');
+                                    setUserContentRejectAttempted(false);
+                                  }}
+                                >
+                                  {content.status === 'rejected' ? 'Taken down' : 'Take down'}
+                                </Button>
+                              </div>
+                              {content.description ? (
+                                <p className="mt-2 text-sm text-muted-foreground line-clamp-2">
+                                  {content.description}
+                                </p>
+                              ) : null}
+                            </div>
+                          ))
+                        )}
+                      </CardContent>
+                    </Card>
+
+                    <Card>
+                      <CardHeader>
+                        <CardTitle>Comments</CardTitle>
+                      </CardHeader>
+                      <CardContent className="space-y-3">
+                        {selectedUser.comments.length === 0 ? (
+                          <p className="text-sm text-muted-foreground">No comments recorded.</p>
+                        ) : (
+                          selectedUser.comments.map((comment) => (
+                            <div key={comment.id} className="rounded-lg border border-border/70 p-3">
+                              <div className="flex flex-wrap items-center justify-between gap-2">
+                                <p className="text-sm font-medium">{comment.contentTitle ?? 'Unknown content'}</p>
+                                <Button
+                                  type="button"
+                                  size="sm"
+                                  variant="outline"
+                                  disabled={userActionKey === `comment:${comment.id}` || !comment.contentId}
+                                  onClick={() => {
+                                    void handleDeleteUserComment(comment.id, comment.contentId);
+                                  }}
+                                >
+                                  Delete
+                                </Button>
+                              </div>
+                              <p className="mt-2 text-sm text-muted-foreground">{comment.body ?? 'No comment body.'}</p>
+                              <p className="mt-1 text-xs text-muted-foreground">
+                                {comment.createdAt ? new Date(comment.createdAt).toLocaleString() : 'Unknown time'}
+                              </p>
+                            </div>
+                          ))
+                        )}
+                      </CardContent>
+                    </Card>
+                  </div>
+
+                  <div className="grid gap-6 lg:grid-cols-2">
+                    <Card>
+                      <CardHeader>
+                        <CardTitle>Lesson Progress</CardTitle>
+                      </CardHeader>
+                      <CardContent className="space-y-3">
+                        {selectedUser.lessonProgress.length === 0 ? (
+                          <p className="text-sm text-muted-foreground">No lesson progress recorded.</p>
+                        ) : (
+                          selectedUser.lessonProgress.map((progress) => (
+                            <div key={progress.id} className="rounded-lg border border-border/70 p-3">
+                              <div className="flex flex-wrap items-center justify-between gap-2">
+                                <div>
+                                  <p className="font-medium">{progress.lessonTitle ?? progress.lessonId ?? 'Unknown lesson'}</p>
+                                  <p className="text-xs text-muted-foreground">
+                                    {progress.status ?? 'unknown'} · {progress.progressPercentage}%
+                                  </p>
+                                </div>
+                                <Button
+                                  type="button"
+                                  size="sm"
+                                  variant="outline"
+                                  disabled={userActionKey === `progress:${progress.lessonId}` || !progress.lessonId}
+                                  onClick={() => {
+                                    void handleResetLessonProgress(progress.lessonId);
+                                  }}
+                                >
+                                  Reset
+                                </Button>
+                              </div>
+                              <p className="mt-1 text-xs text-muted-foreground">
+                                Last accessed {progress.lastAccessedAt ? new Date(progress.lastAccessedAt).toLocaleString() : 'Unknown'}
+                              </p>
+                            </div>
+                          ))
+                        )}
+                      </CardContent>
+                    </Card>
+
+                    <Card>
+                      <CardHeader>
+                        <CardTitle>Badges and Saved Activity</CardTitle>
+                      </CardHeader>
+                      <CardContent className="space-y-4">
+                        <div className="space-y-2">
+                          <p className="text-sm font-medium">Badges</p>
+                          {selectedUser.badges.length === 0 ? (
+                            <p className="text-sm text-muted-foreground">No badges yet.</p>
+                          ) : (
+                            selectedUser.badges.map((badge) => (
+                              <div key={`${badge.lessonId ?? badge.badgeName}-${badge.earnedAt ?? 'locked'}`} className="rounded-md border border-border/70 p-3">
+                                <p className="font-medium">{badge.badgeName}</p>
+                                <p className="text-xs text-muted-foreground">
+                                  {badge.lessonTitle ?? 'Lesson badge'} · {badge.earned ? 'Earned' : 'Locked'}
+                                </p>
+                              </div>
+                            ))
+                          )}
+                        </div>
+                        <div className="space-y-2">
+                          <p className="text-sm font-medium">Liked and Saved</p>
+                          <p className="text-sm text-muted-foreground">
+                            {selectedUser.activity.likedContentCount} liked · {selectedUser.activity.savedContentCount} saved
+                          </p>
+                          {selectedUser.likedContent.slice(0, 3).map((content) => (
+                            <div key={`liked-${content.id}`} className="rounded-md border border-border/70 p-3">
+                              <p className="font-medium">{content.title}</p>
+                              <p className="text-xs text-muted-foreground">Liked content</p>
+                            </div>
+                          ))}
+                          {selectedUser.savedContent.slice(0, 3).map((content) => (
+                            <div key={`saved-${content.id}`} className="rounded-md border border-border/70 p-3">
+                              <p className="font-medium">{content.title}</p>
+                              <p className="text-xs text-muted-foreground">Saved content</p>
+                            </div>
+                          ))}
+                        </div>
+                      </CardContent>
+                    </Card>
+                  </div>
+
+                  <div className="grid gap-6 lg:grid-cols-2">
+                    <Card>
+                      <CardHeader>
+                        <CardTitle>Browsing History</CardTitle>
+                      </CardHeader>
+                      <CardContent className="space-y-2">
+                        {selectedUser.browsingHistory.length === 0 ? (
+                          <p className="text-sm text-muted-foreground">No browsing history.</p>
+                        ) : (
+                          selectedUser.browsingHistory.map((entry) => (
+                            <div key={entry.id} className="rounded-md border border-border/70 p-3">
+                              <p className="font-medium">{entry.title ?? entry.itemId ?? 'Viewed item'}</p>
+                              <p className="text-xs text-muted-foreground">
+                                {entry.viewedAt ? new Date(entry.viewedAt).toLocaleString() : 'Unknown time'}
+                              </p>
+                            </div>
+                          ))
+                        )}
+                      </CardContent>
+                    </Card>
+
+                    <Card>
+                      <CardHeader>
+                        <CardTitle>Search History</CardTitle>
+                      </CardHeader>
+                      <CardContent className="space-y-2">
+                        {selectedUser.searchHistory.length === 0 ? (
+                          <p className="text-sm text-muted-foreground">No search history.</p>
+                        ) : (
+                          selectedUser.searchHistory.map((entry) => (
+                            <div key={entry.id} className="rounded-md border border-border/70 p-3">
+                              <p className="font-medium">{entry.query ?? 'Untitled query'}</p>
+                              <p className="text-xs text-muted-foreground">
+                                {entry.searchedAt ? new Date(entry.searchedAt).toLocaleString() : 'Unknown time'}
+                              </p>
+                            </div>
+                          ))
+                        )}
+                      </CardContent>
+                    </Card>
+
+                    <Card>
+                      <CardHeader>
+                        <CardTitle>Chat History</CardTitle>
+                      </CardHeader>
+                      <CardContent className="space-y-2">
+                        {selectedUser.chatHistory.length === 0 ? (
+                          <p className="text-sm text-muted-foreground">No chat history.</p>
+                        ) : (
+                          selectedUser.chatHistory.map((message, index) => (
+                            <div key={`${message.timestamp}-${index}`} className="rounded-md border border-border/70 p-3">
+                              <p className="text-xs uppercase text-muted-foreground">{message.role}</p>
+                              <p className="mt-1 text-sm">{message.message}</p>
+                              <p className="mt-1 text-xs text-muted-foreground">
+                                {message.timestamp ? new Date(message.timestamp).toLocaleString() : 'Unknown time'}
+                              </p>
+                            </div>
+                          ))
+                        )}
+                      </CardContent>
+                    </Card>
+                  </div>
+                </div>
+              ) : (
+                <div className="px-6 pb-8 text-sm text-muted-foreground">Select a user to review.</div>
+              )}
+            </div>
+          </DialogContent>
+        </Dialog>
+
+        <Dialog
+          open={userContentRejectTarget !== null}
+          onOpenChange={(open) => {
+            if (!open) {
+              setUserContentRejectTarget(null);
+              setUserContentRejectReason('');
+              setUserContentRejectAttempted(false);
+            }
+          }}
+        >
+          <DialogContent className="max-w-lg">
+            <DialogHeader>
+              <DialogTitle>Take Down User Content</DialogTitle>
+              <DialogDescription>
+                Provide a clear moderation reason before removing this content from the user profile.
+              </DialogDescription>
+            </DialogHeader>
+            <div className="grid gap-2">
+              <Label htmlFor="user-content-reject-reason">Reason</Label>
+              <Textarea
+                id="user-content-reject-reason"
+                value={userContentRejectReason}
+                onChange={(e) => setUserContentRejectReason(sanitizeInputValue(e.target.value, MAX_LONG_TEXT))}
+                maxLength={MAX_LONG_TEXT}
+                rows={4}
+              />
+              {userContentRejectAttempted && !normalizeText(userContentRejectReason, MAX_LONG_TEXT) ? (
+                <p className="text-xs text-destructive">A takedown reason is required.</p>
+              ) : null}
+              <p className="text-xs text-muted-foreground">{userContentRejectReason.length}/{MAX_LONG_TEXT}</p>
+            </div>
+            <DialogFooter>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => {
+                  setUserContentRejectTarget(null);
+                  setUserContentRejectReason('');
+                  setUserContentRejectAttempted(false);
+                }}
+              >
+                Cancel
+              </Button>
+              <Button
+                type="button"
+                variant="destructive"
+                disabled={!!userContentRejectTarget && userActionKey === `content:${userContentRejectTarget.id}`}
+                onClick={() => {
+                  void handleTakeDownUserContent();
+                }}
+              >
+                Take down
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
 
         <Dialog
           open={selectedModerationItem !== null}

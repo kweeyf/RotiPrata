@@ -1,4 +1,11 @@
-import type { AdminAnalytics, AdminContentFlagGroup, AdminUserSummary, Content, ModerationQueueItem } from "@/types";
+import type {
+  AdminAnalytics,
+  AdminContentFlagGroup,
+  AdminUserDetail,
+  AdminUserSummary,
+  Content,
+  ModerationQueueItem,
+} from "@/types";
 
 /**
  * DUMMY DATA: Used when VITE_USE_MOCKS=true or when API calls fail in auto mode.
@@ -18,6 +25,7 @@ export const mockAdminUsers: AdminUserSummary[] = [
   {
     userId: "user-1",
     displayName: "Kai Trendsetter",
+    email: "kai@example.com",
     avatarUrl: null,
     reputationPoints: 4200,
     currentStreak: 18,
@@ -25,10 +33,14 @@ export const mockAdminUsers: AdminUserSummary[] = [
     lastActivityDate: now,
     totalHoursLearned: 32,
     roles: ["admin"],
+    status: "active",
+    createdAt: new Date(Date.now() - 86400000 * 90).toISOString(),
+    lastSignInAt: now,
   },
   {
     userId: "user-2",
     displayName: "Mika Memevault",
+    email: "mika@example.com",
     avatarUrl: null,
     reputationPoints: 3100,
     currentStreak: 9,
@@ -36,10 +48,14 @@ export const mockAdminUsers: AdminUserSummary[] = [
     lastActivityDate: now,
     totalHoursLearned: 21,
     roles: ["user"],
+    status: "active",
+    createdAt: new Date(Date.now() - 86400000 * 60).toISOString(),
+    lastSignInAt: now,
   },
   {
     userId: "user-3",
     displayName: "Jules Slanglab",
+    email: "jules@example.com",
     avatarUrl: null,
     reputationPoints: 2750,
     currentStreak: 4,
@@ -47,6 +63,9 @@ export const mockAdminUsers: AdminUserSummary[] = [
     lastActivityDate: new Date(Date.now() - 86400000).toISOString(),
     totalHoursLearned: 16,
     roles: ["user"],
+    status: "suspended",
+    createdAt: new Date(Date.now() - 86400000 * 30).toISOString(),
+    lastSignInAt: new Date(Date.now() - 86400000).toISOString(),
   },
 ];
 
@@ -153,6 +172,80 @@ export const mockModerationQueue: (ModerationQueueItem & { content: Content })[]
     },
   },
 ];
+
+export const mockAdminUserDetails: Record<string, AdminUserDetail> = {
+  "user-1": {
+    summary: mockAdminUsers[0],
+    suspendedUntil: null,
+    activity: {
+      postedContentCount: 1,
+      likedContentCount: 1,
+      savedContentCount: 0,
+      commentCount: 1,
+      enrolledLessonCount: 1,
+      completedLessonCount: 1,
+      badgeCount: 1,
+      browsingCount: 1,
+      searchCount: 2,
+      chatMessageCount: 2,
+    },
+    postedContent: mockModerationQueue.slice(0, 1).map((item) => item.content),
+    likedContent: mockModerationQueue.slice(1, 2).map((item) => item.content),
+    savedContent: [],
+    comments: [
+      {
+        id: "comment-1",
+        contentId: "1",
+        contentTitle: "New Slang: Mewing",
+        body: "This trend is still everywhere.",
+        author: "Kai Trendsetter",
+        createdAt: now,
+        updatedAt: now,
+      },
+    ],
+    lessonProgress: [
+      {
+        id: "progress-1",
+        lessonId: "lesson-1",
+        lessonTitle: "Brainrot Basics",
+        status: "completed",
+        progressPercentage: 100,
+        currentSection: "summary",
+        startedAt: new Date(Date.now() - 86400000 * 2).toISOString(),
+        completedAt: now,
+        lastAccessedAt: now,
+      },
+    ],
+    badges: [
+      {
+        lessonId: "lesson-1",
+        lessonTitle: "Brainrot Basics",
+        badgeName: "Trend Translator",
+        badgeIconUrl: null,
+        earned: true,
+        earnedAt: now,
+      },
+    ],
+    browsingHistory: [
+      {
+        id: "browse-1",
+        contentId: "1",
+        lessonId: null,
+        itemId: "1",
+        title: "New Slang: Mewing",
+        viewedAt: now,
+      },
+    ],
+    searchHistory: [
+      { id: "search-1", query: "italian brainrot", searchedAt: now },
+      { id: "search-2", query: "mewing meaning", searchedAt: new Date(Date.now() - 3600000).toISOString() },
+    ],
+    chatHistory: [
+      { role: "user", message: "What does mewing mean?", timestamp: new Date(Date.now() - 7200000).toISOString() },
+      { role: "assistant", message: "It is a viral posture trend.", timestamp: new Date(Date.now() - 7190000).toISOString() },
+    ],
+  },
+};
 
 export const mockFlags: AdminContentFlagGroup[] = [
   {

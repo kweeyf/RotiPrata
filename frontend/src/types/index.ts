@@ -2,6 +2,7 @@
 // These types mirror the backend database schema (Supabase + Java API).
 
 export type AppRole = 'user' | 'admin';
+export type AdminUserStatus = 'active' | 'suspended';
 export type ContentStatus = 'pending' | 'approved' | 'rejected';
 export type ContentType = 'video' | 'image' | 'text';
 export type CategoryType = 'slang' | 'meme' | 'dance_trend' | 'social_practice' | 'cultural_reference' | 'other';
@@ -474,6 +475,7 @@ export interface AdminBreakdownItem {
 export interface AdminUserSummary {
   userId: string;
   displayName: string;
+  email: string | null;
   avatarUrl: string | null;
   reputationPoints: number;
   currentStreak: number;
@@ -481,6 +483,80 @@ export interface AdminUserSummary {
   lastActivityDate: string | null;
   totalHoursLearned: number;
   roles: AppRole[];
+  status: AdminUserStatus;
+  createdAt: string | null;
+  lastSignInAt: string | null;
+}
+
+export interface AdminUserActivityStats {
+  postedContentCount: number;
+  likedContentCount: number;
+  savedContentCount: number;
+  commentCount: number;
+  enrolledLessonCount: number;
+  completedLessonCount: number;
+  badgeCount: number;
+  browsingCount: number;
+  searchCount: number;
+  chatMessageCount: number;
+}
+
+export interface AdminUserComment {
+  id: string;
+  contentId: string | null;
+  contentTitle: string | null;
+  body: string | null;
+  author: string;
+  createdAt: string | null;
+  updatedAt: string | null;
+}
+
+export interface AdminUserLessonProgressDetail {
+  id: string;
+  lessonId: string | null;
+  lessonTitle: string | null;
+  status: string | null;
+  progressPercentage: number;
+  currentSection: string | null;
+  startedAt: string | null;
+  completedAt: string | null;
+  lastAccessedAt: string | null;
+}
+
+export interface AdminUserSearchHistory {
+  id: string;
+  query: string | null;
+  searchedAt: string | null;
+}
+
+export interface AdminUserBrowsingHistory {
+  id: string;
+  contentId: string | null;
+  lessonId: string | null;
+  itemId: string | null;
+  title: string | null;
+  viewedAt: string | null;
+}
+
+export interface AdminUserChatMessage {
+  role: string;
+  message: string;
+  timestamp: string;
+}
+
+export interface AdminUserDetail {
+  summary: AdminUserSummary;
+  suspendedUntil: string | null;
+  activity: AdminUserActivityStats;
+  postedContent: Content[];
+  likedContent: Content[];
+  savedContent: Content[];
+  comments: AdminUserComment[];
+  lessonProgress: AdminUserLessonProgressDetail[];
+  badges: UserBadge[];
+  browsingHistory: AdminUserBrowsingHistory[];
+  searchHistory: AdminUserSearchHistory[];
+  chatHistory: AdminUserChatMessage[];
 }
 
 export interface AdminAnalytics {
