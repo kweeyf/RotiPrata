@@ -39,16 +39,44 @@ describe('FeedCard', () => {
       <FeedCard content={buildContent()} commentCount={0} onLearnMoreClick={onLearnMoreClick} />
     );
 
-    const mediaLayer = container.querySelector('.absolute.inset-0.bg-black');
-    expect(mediaLayer).not.toBeNull();
+    const card = container.firstElementChild;
+    expect(card).not.toBeNull();
 
-    fireEvent.touchStart(mediaLayer as Element, {
+    fireEvent.touchStart(card as Element, {
       touches: [{ clientX: 260, clientY: 200 }],
     });
-    fireEvent.touchEnd(mediaLayer as Element, {
+    fireEvent.touchEnd(card as Element, {
       changedTouches: [{ clientX: 140, clientY: 210 }],
     });
 
     expect(onLearnMoreClick).toHaveBeenCalledTimes(1);
+  });
+
+  it('does not treat action button taps as a swipe gesture', () => {
+    const onLearnMoreClick = vi.fn();
+    const onSave = vi.fn();
+
+    const { getByText } = render(
+      <FeedCard
+        content={buildContent()}
+        commentCount={0}
+        onLearnMoreClick={onLearnMoreClick}
+        onSave={onSave}
+      />
+    );
+
+    const saveButton = getByText('Save').closest('button');
+    expect(saveButton).not.toBeNull();
+
+    fireEvent.touchStart(saveButton as Element, {
+      touches: [{ clientX: 280, clientY: 560 }],
+    });
+    fireEvent.touchEnd(saveButton as Element, {
+      changedTouches: [{ clientX: 282, clientY: 562 }],
+    });
+    fireEvent.click(saveButton as Element);
+
+    expect(onLearnMoreClick).not.toHaveBeenCalled();
+    expect(onSave).toHaveBeenCalledTimes(1);
   });
 });

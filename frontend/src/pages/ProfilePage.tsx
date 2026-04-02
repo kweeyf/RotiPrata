@@ -182,26 +182,26 @@ const ProfilePage = () => {
       <div className="container max-w-4xl mx-auto px-4 py-6 md:py-8 pb-safe space-y-6">
         <Card className="overflow-hidden border-mainAlt/80 bg-main shadow-sm">
           <CardContent className="p-5 md:p-6">
-            <div className="flex flex-col gap-5 md:flex-row md:items-start md:justify-between">
-              <div className="flex items-start gap-4">
+            <div className="flex items-start justify-between gap-4">
+              <div className="flex min-w-0 items-start gap-4">
                 <Avatar className="h-24 w-24 border-4 border-mainAlt/70 shadow-sm">
                   <AvatarImage src={profile.avatar_url || undefined} />
                   <AvatarFallback className="bg-gradient-to-br from-[#ff4d88] via-[#ff6d6d] to-[#ffb56b] text-3xl text-white">
                     {displayInitial}
                   </AvatarFallback>
                 </Avatar>
-                <div className="space-y-2">
+                <div className="min-w-0 space-y-2">
                   <div className="flex flex-wrap items-center gap-2">
                     <h1 className="text-2xl font-bold">{displayName}</h1>
                     {profile.is_verified ? <Badge className="bg-secondary text-secondary-foreground">Verified</Badge> : null}
                     {isAdmin() ? <Badge variant="destructive">Admin</Badge> : null}
                   </div>
-                  <p className="text-sm text-muted-foreground">@{displayName.toLowerCase().replace(/\s+/g, "_")}</p>
+                  <p className="break-all text-sm text-muted-foreground">@{displayName.toLowerCase().replace(/\s+/g, "_")}</p>
                   {profile.bio ? <p className="max-w-xl text-sm leading-6">{profile.bio}</p> : null}
                 </div>
               </div>
 
-              <div className="flex items-center gap-2">
+              <div className="flex shrink-0 items-start gap-2">
                 <Button asChild variant="ghost" size="icon" className="rounded-full">
                   <Link to="/profile/settings" aria-label="Open profile settings">
                     <Settings className="h-5 w-5" />

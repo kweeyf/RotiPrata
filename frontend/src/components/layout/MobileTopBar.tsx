@@ -1,11 +1,12 @@
-﻿import React from 'react';
+import React from 'react';
 import { Link } from 'react-router-dom';
+import { Shield } from 'lucide-react';
 import { useAuthContext } from '@/contexts/AuthContext';
 import { HeartsIndicator } from './HeartsIndicator';
 import { useIsDesktop } from '@/hooks/use-desktop';
 
 export function MobileTopBar() {
-  const { isAuthenticated, user } = useAuthContext();
+  const { isAuthenticated, isAdmin, user } = useAuthContext();
   const isDesktop = useIsDesktop();
 
   return (
@@ -24,6 +25,15 @@ export function MobileTopBar() {
                 <span>{user?.current_streak ?? 0}</span>
               </div>
               {!isDesktop && <HeartsIndicator />}
+              {!isDesktop && isAdmin() ? (
+                <Link
+                  to="/admin"
+                  className="inline-flex items-center gap-1 rounded-full bg-main border border-mainAlt px-2 py-1 text-xs text-mainAccent"
+                >
+                  <Shield className="h-4 w-4" />
+                  <span>Admin</span>
+                </Link>
+              ) : null}
             </>
           ) : (
             <Link to="/login" className="text-sm text-mainAccent">
@@ -35,4 +45,3 @@ export function MobileTopBar() {
     </header>
   );
 }
-

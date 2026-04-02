@@ -823,25 +823,35 @@ const AdminDashboard = () => {
 
         {/* Tabs */}
         <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="w-full grid grid-cols-4 mb-6">
-            <TabsTrigger value="overview">Overview</TabsTrigger>
-            <TabsTrigger value="moderation">
+          <TabsList className="mb-6 grid h-auto w-full grid-cols-4 rounded-2xl bg-muted p-1 md:h-10 md:rounded-md">
+            <TabsTrigger value="overview" className="min-h-11 rounded-xl px-2 text-xs sm:text-sm md:min-h-0 md:rounded-sm">
+              Overview
+            </TabsTrigger>
+            <TabsTrigger
+              value="moderation"
+              className="min-h-11 rounded-xl px-2 text-xs sm:text-sm md:min-h-0 md:rounded-sm"
+            >
               Moderation
               {moderationQueue.length > 0 && (
-                <Badge variant="destructive" className="ml-2">
+                <Badge variant="destructive" className="ml-1.5 px-2 py-0 text-[10px] md:ml-2">
                   {moderationQueue.length}
                 </Badge>
               )}
             </TabsTrigger>
-            <TabsTrigger value="flags">
+            <TabsTrigger
+              value="flags"
+              className="min-h-11 rounded-xl px-2 text-xs sm:text-sm md:min-h-0 md:rounded-sm"
+            >
               Flags
               {flags.length > 0 && (
-                <Badge variant="destructive" className="ml-2">
+                <Badge variant="destructive" className="ml-1.5 px-2 py-0 text-[10px] md:ml-2">
                   {flags.length}
                 </Badge>
               )}
             </TabsTrigger>
-            <TabsTrigger value="users">Users</TabsTrigger>
+            <TabsTrigger value="users" className="min-h-11 rounded-xl px-2 text-xs sm:text-sm md:min-h-0 md:rounded-sm">
+              Users
+            </TabsTrigger>
           </TabsList>
 
           {/* Overview Tab */}
@@ -1042,21 +1052,27 @@ const AdminDashboard = () => {
                   </div>
                 ) : (
                   flags.map((flag) => (
-                    <div key={flag.id} className="flex items-start gap-4 rounded-lg border border-border/70 p-4">
+                    <div
+                      key={flag.id}
+                      className="rounded-lg border border-border/70 p-4"
+                    >
+                      <div className="flex flex-col gap-4 md:flex-row md:items-start">
                       {flag.content?.thumbnail_url ? (
                         <img
                           src={flag.content.thumbnail_url}
                           alt={flag.content.title}
-                          className="h-20 w-14 rounded-md object-cover bg-muted"
+                          className="mx-auto h-24 w-20 rounded-md object-cover bg-muted md:mx-0 md:h-20 md:w-14"
                         />
                       ) : (
-                        <div className="flex h-20 w-14 items-center justify-center rounded-md bg-muted text-xs text-muted-foreground">
+                        <div className="mx-auto flex h-24 w-20 items-center justify-center rounded-md bg-muted text-xs text-muted-foreground md:mx-0 md:h-20 md:w-14">
                           {flag.content?.content_type ?? 'post'}
                         </div>
                       )}
-                      <div className="flex-1">
+                      <div className="min-w-0 flex-1">
                         <div className="mb-1 flex flex-wrap items-center gap-2">
-                          <Badge variant="destructive">{getFlagReasonSummary(flag)}</Badge>
+                          <Badge variant="destructive" className="max-w-full whitespace-normal break-words leading-4">
+                            {getFlagReasonSummary(flag)}
+                          </Badge>
                           <Badge variant="secondary">{getFlagReportCount(flag)} reports</Badge>
                           {flag.content?.content_type ? (
                             <Badge variant="outline" className="capitalize">
@@ -1070,21 +1086,22 @@ const AdminDashboard = () => {
                             {new Date(flag.created_at).toLocaleDateString()}
                           </span>
                         </div>
-                        <p className="font-medium">{flag.content?.title ?? `Content ${flag.content_id}`}</p>
-                        <p className="text-sm text-muted-foreground">
+                        <p className="break-words font-medium">{flag.content?.title ?? `Content ${flag.content_id}`}</p>
+                        <p className="break-words text-sm text-muted-foreground">
                           Creator: @{flag.content?.creator?.display_name ?? 'anonymous'}
                         </p>
-                        <p className="mt-2 text-sm text-muted-foreground">
+                        <p className="mt-2 break-words text-sm text-muted-foreground">
                           Reasons: {getFlagReasons(flag).join(', ') || 'No reason provided.'}
                         </p>
                         <p className="text-sm text-muted-foreground">
                           Reporter notes: {getFlagDescriptionCount(flag)} of {getFlagReportCount(flag)} reports
                         </p>
                       </div>
-                      <div className="flex gap-2 self-start">
+                      <div className="flex w-full flex-col gap-2 sm:flex-row md:w-auto md:flex-col lg:flex-row">
                         <Button
                           size="sm"
                           variant="outline"
+                          className="w-full md:w-auto"
                           onClick={() => {
                             setSelectedFlagReportsPage(1);
                             setSelectedFlagReporterSearch('');
@@ -1094,12 +1111,18 @@ const AdminDashboard = () => {
                           <Eye className="h-4 w-4 mr-1" />
                           View
                         </Button>
-                        <Button size="sm" variant="destructive" onClick={() => handleOpenFlagTakeDown(flag)}>
+                        <Button
+                          size="sm"
+                          variant="destructive"
+                          className="w-full md:w-auto"
+                          onClick={() => handleOpenFlagTakeDown(flag)}
+                        >
                           Take down
                         </Button>
-                        <Button size="sm" onClick={() => handleResolveFlag(flag.id)}>
+                        <Button size="sm" className="w-full md:w-auto" onClick={() => handleResolveFlag(flag.id)}>
                           Resolve
                         </Button>
+                      </div>
                       </div>
                     </div>
                   ))
@@ -2070,7 +2093,7 @@ const AdminDashboard = () => {
             }
           }}
         >
-          <DialogContent className="max-w-2xl">
+          <DialogContent className="max-h-[calc(100dvh-1.5rem)] max-w-2xl overflow-y-auto">
             <DialogHeader>
               <DialogTitle>Flag Review</DialogTitle>
               <DialogDescription>
@@ -2140,7 +2163,9 @@ const AdminDashboard = () => {
                         selectedFlagReports.map((report: AdminContentFlagReport, index) => (
                           <div key={report.id} className="rounded-md border border-border/70 bg-background px-3 py-3">
                             <div className="flex flex-wrap items-center gap-2">
-                              <Badge variant="destructive">{report.reason}</Badge>
+                              <Badge variant="destructive" className="max-w-full whitespace-normal break-words leading-4">
+                                {report.reason}
+                              </Badge>
                               <Badge variant="outline">
                                 Report {(selectedFlagReportsPage - 1) * FLAG_REPORTS_PAGE_SIZE + index + 1}
                               </Badge>
@@ -2148,10 +2173,10 @@ const AdminDashboard = () => {
                                 {new Date(report.created_at).toLocaleString()}
                               </span>
                             </div>
-                            <p className="mt-2 text-xs text-muted-foreground">
+                            <p className="mt-2 break-words text-xs text-muted-foreground">
                               Reporter: @{report.reporter?.display_name ?? report.reported_by}
                             </p>
-                            <p className="mt-2 text-sm text-muted-foreground">
+                            <p className="mt-2 break-words text-sm text-muted-foreground">
                               {normalizeText(report.description ?? '', MAX_LONG_TEXT)
                                 ? `Reporter note: ${report.description}`
                                 : 'No additional reporter note.'}

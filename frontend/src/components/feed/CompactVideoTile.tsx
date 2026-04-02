@@ -20,7 +20,7 @@ export function CompactVideoTile({
   const previewUrl = thumbnailUrl ?? mediaUrl ?? null;
 
   return (
-    <button type="button" className="group w-full max-w-[9.5rem] text-left" onClick={onClick}>
+    <button type="button" className="group w-full max-w-none text-left sm:max-w-[9.5rem]" onClick={onClick}>
       <div className="relative aspect-[9/16] overflow-hidden rounded-2xl bg-mainDark border border-mainAlt/70">
         {previewUrl ? (
           <img

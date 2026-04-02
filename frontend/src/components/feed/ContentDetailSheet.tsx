@@ -94,7 +94,10 @@ export function ContentDetailSheet({ content, open, onOpenChange }: ContentDetai
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent side="bottom" className="h-[85dvh] rounded-t-3xl flex flex-col overflow-hidden">
+      <SheetContent
+        side="right"
+        className="h-[100dvh] w-full max-w-full rounded-none flex flex-col overflow-hidden sm:max-w-xl"
+      >
         <SheetHeader className="text-left shrink-0">
           <div className="flex items-start gap-3">
             {content.category && <Badge variant="secondary">{content.category.name}</Badge>}
@@ -241,11 +244,6 @@ export function ContentDetailSheet({ content, open, onOpenChange }: ContentDetai
             </Button>
           </div>
 
-          <div className="flex items-center gap-4 text-sm text-muted-foreground">
-            <span>{content.view_count} views</span>
-            <span>|</span>
-            <span>{content.educational_value_votes} found this helpful</span>
-          </div>
         </div>
       </SheetContent>
     </Sheet>
