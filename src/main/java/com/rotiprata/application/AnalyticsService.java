@@ -69,17 +69,27 @@ public class AnalyticsService {
     }
 
     public List<Map<String, Object>> getTopFlagUsers(String accessToken, String month, String year) {
-
-        int monthInt = Integer.parseInt(month);
-        int yearInt = Integer.parseInt(year);
-
-        List<Map<String, Object>> topUsers = supabaseRestClient.rpcList(
+        return supabaseRestClient.rpcList(
             "get_top_flag_users",
-            Map.of("p_month", monthInt, "p_year", yearInt),
+            buildMonthYearParams(month, year),
             accessToken,
             new TypeReference<List<Map<String, Object>>>() {}
         );
+    }
 
-        return topUsers;
+    public List<Map<String, Object>> getTopFlagContent(String accessToken, String month, String year) {
+        return supabaseRestClient.rpcList(
+            "get_top_flag_content",
+            buildMonthYearParams(month, year),
+            accessToken,
+            new TypeReference<List<Map<String, Object>>>() {}
+        );
+    }
+
+    // Private helper to convert month/year strings to RPC param map
+    private Map<String, Object> buildMonthYearParams(String month, String year) {
+        int monthInt = Integer.parseInt(month);
+        int yearInt  = Integer.parseInt(year);
+        return Map.of("p_month", monthInt, "p_year", yearInt);
     }
 }

@@ -69,6 +69,19 @@ public class AdminAnalyticsController {
         return analyticsService.getTopFlagUsers(accessToken, month, year);
     }
 
+    @GetMapping("/top-flag-content")
+    public List<Map<String, Object>> getTopFlagContent
+    (
+        @AuthenticationPrincipal Jwt jwt,
+        @RequestParam String month,
+        @RequestParam String year
+    ) {
+        validateMonthYear(month, year);
+
+        String accessToken = jwt.getTokenValue();
+        return analyticsService.getTopFlagContent(accessToken, month, year);
+    }
+
     private void validateMonthYear(String month, String year) {
         int m = Integer.parseInt(month);
         int y = Integer.parseInt(year);
@@ -78,4 +91,5 @@ public class AdminAnalyticsController {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Cannot request future month");
         }
     }
+
 }

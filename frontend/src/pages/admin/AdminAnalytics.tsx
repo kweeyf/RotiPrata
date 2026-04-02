@@ -9,7 +9,7 @@ import {
   ResponsiveContainer,
   CartesianGrid,
 } from "recharts";
-import { getFlaggedContentStats, getAvgReviewTimeStats, getTopFlagUsers, FlagByDate } from "@/lib/api";
+import { getFlaggedContentStats, getAvgReviewTimeStats, getTopFlagUsers, getTopFlagContent, fetchContentById, FlagByDate } from "@/lib/api";
 
 // Types
 type TopItem = { name: string; count: number };
@@ -94,12 +94,20 @@ const AdminAnalytics = () => {
 
         // Fetch top flagged users
         const topUsersData = await getTopFlagUsers(monthStr, yearStr);
-        console.log(topUsersData)
         const formattedTopUsers = topUsersData.map((u: any) => ({
           name: u.display_name || "Unknown",
           count: u.flag_count,
         }));
         setTopUsers(formattedTopUsers);
+
+        // Fetch top flagged content
+        const topContentData = await getTopFlagContent(monthStr, yearStr);
+        console.log(topContentData)
+        const formattedTopContent = topContentData.map((c) => ({
+          name: c.content_title || "Untitled",
+          count: c.flag_count,
+        }));
+        setTopContent(formattedTopContent);
 
         setMonthYear(new Date(year, month - 1, 1).toLocaleDateString("en-GB", { month: "long", year: "numeric" }));
       } catch (err) {
