@@ -56,6 +56,19 @@ public class AdminAnalyticsController {
         return result;
     }
 
+    @GetMapping("/top-flag-users")
+    public List<Map<String, Object>> getTopFlagUsers
+    (
+        @AuthenticationPrincipal Jwt jwt,
+        @RequestParam String month,
+        @RequestParam String year
+    ) {
+        validateMonthYear(month, year);
+
+        String accessToken = jwt.getTokenValue();
+        return analyticsService.getTopFlagUsers(accessToken, month, year);
+    }
+
     private void validateMonthYear(String month, String year) {
         int m = Integer.parseInt(month);
         int y = Integer.parseInt(year);

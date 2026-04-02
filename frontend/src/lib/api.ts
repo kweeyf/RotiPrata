@@ -201,9 +201,15 @@ export type FlagByDate = {
   count: number;
 }
 
-export interface AvgReviewTimeDTO {
+export type AvgReviewTimeDTO = {
   avgReviewTime: number;
 }
+
+type TopFlagUser = {
+  user_id: string;
+  name: string;
+  count: number;
+};
 
 const getMockContentById = (contentId: string) =>
   mockContents.find((content) => content.id === contentId) ?? mockContents[0];
@@ -1275,3 +1281,5 @@ export const getFlaggedContentStats = (month: string, year: string) =>
 export const getAvgReviewTimeStats = (month: string, year: string) =>
   apiGet<AvgReviewTimeDTO>(`/admin/analytics/avg-review-time?month=${month}&year=${year}`);
 
+export const getTopFlagUsers = (month: string, year: string) =>
+  apiGet<TopFlagUser[]>(`/admin/analytics/top-flag-users?month=${month}&year=${year}`);

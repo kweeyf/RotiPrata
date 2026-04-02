@@ -9,7 +9,7 @@ import {
   ResponsiveContainer,
   CartesianGrid,
 } from "recharts";
-import { getFlaggedContentStats, getAvgReviewTimeStats, FlagByDate } from "@/lib/api";
+import { getFlaggedContentStats, getAvgReviewTimeStats, getTopFlagUsers, FlagByDate } from "@/lib/api";
 
 // Types
 type TopItem = { name: string; count: number };
@@ -84,11 +84,22 @@ const AdminAnalytics = () => {
       const [yearStr, monthStr] = selectedMonth.split("-");
       const year = Number(yearStr), month = Number(monthStr);
       try {
+        // Fetch flag trend
         const flagData = await getFlaggedContentStats(monthStr, yearStr);
         setFlagTrend(formatFlagDataForMonth(flagData, year, month));
 
+        // Fetch average review time
         const avgReview = await getAvgReviewTimeStats(monthStr, yearStr);
         setAvgReviewTime(avgReview.avgReviewTime);
+
+        // Fetch top flagged users
+        const topUsersData = await getTopFlagUsers(monthStr, yearStr);
+        console.log(topUsersData)
+        const formattedTopUsers = topUsersData.map((u: any) => ({
+          name: u.display_name || "Unknown",
+          count: u.flag_count,
+        }));
+        setTopUsers(formattedTopUsers);
 
         setMonthYear(new Date(year, month - 1, 1).toLocaleDateString("en-GB", { month: "long", year: "numeric" }));
       } catch (err) {
@@ -99,10 +110,6 @@ const AdminAnalytics = () => {
   }, [selectedMonth]);
 
   useEffect(() => {
-    setTopUsers([
-      { name: "user1", count: 12 },
-      { name: "user2", count: 9 },
-    ]);
     setTopContent([
       { name: "Post #123", count: 15 },
       { name: "Post #456", count: 11 },

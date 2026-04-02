@@ -7,19 +7,23 @@ import java.util.LinkedHashMap;
 import java.util.List;
 
 import org.springframework.stereotype.Service;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.rotiprata.infrastructure.supabase.SupabaseRestClient;
 
 @Service
 public class AnalyticsService {
 
     private final ContentService contentService;
+    private final SupabaseRestClient supabaseRestClient;
 
-    public AnalyticsService(ContentService contentService) {
+    public AnalyticsService(ContentService contentService, SupabaseRestClient supabaseRestClient) {
         this.contentService = contentService;
+        this.supabaseRestClient = supabaseRestClient;
     }
     
     public List<Map<String, Object>> getFlaggedContentByMonthAndYear (String accessToken, String month, String year) {
         
-        // Fetch raw flagged content from ContentService
+        // Fetch raw flagged content
         List<Map<String, Object>> rawFlags = contentService.getFlaggedContentByMonthAndYear(accessToken, month, year);
        
         // Aggregate counts by date
@@ -62,5 +66,20 @@ public class AnalyticsService {
         // Compute average
         if (reviewTimes.isEmpty()) return 0;
         return reviewTimes.stream().mapToLong(Long::longValue).average().orElse(0);
+    }
+
+    public List<Map<String, Object>> getTopFlagUsers(String accessToken, String month, String year) {
+
+        int monthInt = Integer.parseInt(month);
+        int yearInt = Integer.parseInt(year);
+
+        List<Map<String, Object>> topUsers = supabaseRestClient.rpcList(
+            "get_top_flag_users",
+            Map.of("p_month", monthInt, "p_year", yearInt),
+            accessToken,
+            new TypeReference<List<Map<String, Object>>>() {}
+        );
+
+        return topUsers;
     }
 }
