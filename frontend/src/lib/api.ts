@@ -978,7 +978,19 @@ export const updateAdminUserRole = (userId: string, role: AppRole) =>
       if (!target) {
         throw new Error("User not found");
       }
+      const isDemotingAdmin = target.roles.includes("admin") && role !== "admin";
+      const adminCount = mockAdminUsers.filter((user) => user.roles.includes("admin")).length;
+      if (isDemotingAdmin && userId === mockAuthUser.user_id) {
+        throw new Error("You cannot remove your own admin role");
+      }
+      if (isDemotingAdmin && adminCount <= 1) {
+        throw new Error("At least one admin is required");
+      }
       target.roles = [role];
+      const detail = mockAdminUserDetails[userId];
+      if (detail) {
+        detail.summary.roles = [role];
+      }
       return target;
     },
     () => apiPut<AdminUserSummary>(`/admin/users/${userId}/role`, { role }),
