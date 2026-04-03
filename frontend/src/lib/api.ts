@@ -939,12 +939,6 @@ export const resetPassword = (accessToken: string, newPassword: string) =>
     { allowAutoFallback: false }
   );
 
-export const buildGoogleOAuthUrl = (redirectTo: string) => {
-  const base = (import.meta.env.VITE_API_BASE_URL ?? "/api").replace(/\/$/, "");
-  const target = `${base}/auth/login/google?redirectTo=${encodeURIComponent(redirectTo)}`;
-  return target;
-};
-
 export const checkDisplayNameAvailability = (displayName: string) =>
   withMockFallback(
     "auth-display-name-available",

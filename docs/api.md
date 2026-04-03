@@ -8,7 +8,6 @@ Audit source: controller mappings in `src/main/java/com/rotiprata/api/*Controlle
 ## Security and Error Contract
 
 - Public endpoints (no JWT required):
-  - `GET /auth/login/google`
   - `GET /auth/username-available`
   - `GET /categories`
   - `POST /auth/login`
@@ -29,7 +28,6 @@ Audit source: controller mappings in `src/main/java/com/rotiprata/api/*Controlle
 - `POST /auth/reset-password`
 - `POST /auth/logout`
 - `POST /auth/streak/touch`
-- `GET /auth/login/google`
 - `GET /auth/username-available`
 
 ### Users (`UserController`)
@@ -374,7 +372,6 @@ Audit source: controller mappings in `src/main/java/com/rotiprata/api/*Controlle
 - `POST /auth/logout` -> implemented
 - `POST /auth/forgot-password` -> implemented
 - `POST /auth/reset-password` -> implemented
-- `GET /auth/login/google` -> implemented
 - `GET /auth/username-available` -> implemented
 
 ### Admin
@@ -447,6 +444,7 @@ Audit source: controller mappings in `src/main/java/com/rotiprata/api/*Controlle
 - `/users/me` may include `timezone` for login streak day-boundary preference.
 - `PUT /users/me/preferences` backend DTO uses `themePreference` (camelCase).  
   Frontend currently sends `theme_preference` in `frontend/src/lib/api.ts`.
+- Auth redirects for email confirmation and password recovery now use the neutral frontend route `/auth/finish`.
 - Learner quiz endpoints do not expose `correct_answer`; grading is server-side.
 - `PUT /lessons/{lessonId}/progress` exists for backward compatibility; section completion + quiz flow is the primary path.
 - `GET /lessons/hub` now returns `summary` plus `categories[]`, where each category includes `categoryId`, `name`, `type`, `color`, `isVirtual`, and ordered `lessons[]`.
