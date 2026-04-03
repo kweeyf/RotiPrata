@@ -10,7 +10,7 @@ import {
   ResponsiveContainer,
   CartesianGrid,
 } from "recharts";
-import { getFlaggedContentStats, getAvgReviewTimeStats, getTopFlagUsers, getTopFlagContent, fetchContentById, fetchAdminUserDetail, FlagByDate } from "@/lib/api";
+import { getFlaggedContentStats, getAvgReviewTimeStats, getTopFlagUsers, getTopFlagContent, getAuditLogs, fetchContentById, fetchAdminUserDetail, FlagByDate } from "@/lib/api";
 
 // Types
 type TopItem = { name: string; count: number, id: string };
@@ -135,7 +135,7 @@ const AdminAnalytics = () => {
         }));
         setTopUsers(formattedTopUsers);
 
-        // Fetch top flagged content
+        // Fetch top flagged contents
         const topContentData = await getTopFlagContent(monthStr, yearStr);
         const formattedTopContent = topContentData.map((c) => ({
           name: c.content_title || "Untitled",
@@ -144,6 +144,27 @@ const AdminAnalytics = () => {
         }));
         setTopContent(formattedTopContent);
 
+        // Load audit logs
+        const logs = await getAuditLogs(monthStr, yearStr); 
+
+        const formattedLogs = logs.map((log: any) => ({
+          admin: log.admin_name ?? log.profiles?.display_name ?? "Unknown", 
+          action: log.action_type || log.action || "UNKNOWN",
+          targetId: log.target_id ?? 0,
+          time: log.created_at
+            ? new Date(log.created_at).toLocaleString("en-GB", {
+                day: "2-digit",
+                month: "2-digit",
+                year: "numeric",
+                hour: "2-digit",
+                minute: "2-digit",
+                second: "2-digit"
+              })
+            : ""
+        }));
+        console.log(formattedLogs)
+        setAuditLogs(formattedLogs);
+
         setMonthYear(new Date(year, month - 1, 1).toLocaleDateString("en-GB", { month: "long", year: "numeric" }));
       } catch (err) {
         console.error("Failed to fetch analytics:", err);
@@ -151,13 +172,6 @@ const AdminAnalytics = () => {
     };
     loadAnalytics();
   }, [selectedMonth]);
-
-  useEffect(() => {
-    setAuditLogs([
-      { admin: "Admin1", action: "DELETE_CONTENT", targetId: 123, time: "10:00" },
-      { admin: "Admin2", action: "BAN_USER",       targetId: 45,  time: "11:30" },
-    ]);
-  }, []);
 
   const totalFlags = flagTrend.reduce((a, d) => a + d.count, 0);
   const maxFlags   = Math.max(...flagTrend.map((d) => d.count), 0);

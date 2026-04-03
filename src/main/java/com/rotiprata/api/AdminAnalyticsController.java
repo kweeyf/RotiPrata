@@ -69,8 +69,8 @@ public class AdminAnalyticsController {
         return analyticsService.getTopFlagUsers(accessToken, month, year);
     }
 
-    @GetMapping("/top-flag-content")
-    public List<Map<String, Object>> getTopFlagContent
+    @GetMapping("/top-flag-contents")
+    public List<Map<String, Object>> getTopFlagContents
     (
         @AuthenticationPrincipal Jwt jwt,
         @RequestParam String month,
@@ -79,8 +79,23 @@ public class AdminAnalyticsController {
         validateMonthYear(month, year);
 
         String accessToken = jwt.getTokenValue();
-        return analyticsService.getTopFlagContent(accessToken, month, year);
+        return analyticsService.getTopFlagContents(accessToken, month, year);
     }
+
+    @GetMapping("/audit-logs")
+    public List<Map<String, Object>> getAuditLogs
+    (
+        @AuthenticationPrincipal Jwt jwt,
+        @RequestParam String month,
+        @RequestParam String year
+    ) {
+        validateMonthYear(month, year);
+
+        String accessToken = jwt.getTokenValue();
+        return analyticsService.getAuditLogs(accessToken, month, year);
+    }
+
+    // Private Helpers
 
     private void validateMonthYear(String month, String year) {
         int m = Integer.parseInt(month);

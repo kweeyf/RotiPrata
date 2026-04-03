@@ -221,6 +221,16 @@ export type TopFlagContentItem = {
   flag_count: number;
 };
 
+export type AuditLogItem = {
+  admin_id: string;
+  admin_name: string;
+  action: string;
+  target_id: string;
+  target_type: string;
+  description: string;
+  created_at: string;
+};
+
 const getMockContentById = (contentId: string) =>
   mockContents.find((content) => content.id === contentId) ?? mockContents[0];
 
@@ -1347,4 +1357,8 @@ export const getTopFlagUsers = (month: string, year: string) =>
   apiGet<TopFlagUser[]>(`/admin/analytics/top-flag-users?month=${month}&year=${year}`);
 
 export const getTopFlagContent = (month: string, year: string) =>
-  apiGet<TopFlagContentItem[]>(`/admin/analytics/top-flag-content?month=${month}&year=${year}`);
+  apiGet<TopFlagContentItem[]>(`/admin/analytics/top-flag-contents?month=${month}&year=${year}`);
+
+export const getAuditLogs = (month: string, year: string) =>
+  apiGet<AuditLogItem[]>(`/admin/analytics/audit-logs?month=${month}&year=${year}`);
+

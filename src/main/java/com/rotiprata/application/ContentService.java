@@ -1126,7 +1126,7 @@ public class ContentService {
     (
         String accessToken, String month, String year
     ) {
-        String query = buildDateQuery(month, year);
+        String query = DateUtils.buildDateQuery(month, year);
 
         List<Map<String, Object>> rawFlags = supabaseAdminRestClient.getList(
             "content_flags",
@@ -1134,19 +1134,5 @@ public class ContentService {
             MAP_LIST
         );
         return rawFlags;
-    }
-    
-    private String buildDateQuery(String month, String year) {
-        String start = String.format("%s-%s-01T00:00:00Z", year, month);
-        String end = String.format("%sT00:00:00Z", nextMonth(year, month));
-        return String.format("created_at=gte.%s&created_at=lt.%s", start, end);
-    }
-
-    // Helper for next month string
-    private String nextMonth(String yearStr, String monthStr) {
-        int year = Integer.parseInt(yearStr);
-        int month = Integer.parseInt(monthStr);
-        if (month == 12) return (year + 1) + "-01-01";
-        return year + "-" + String.format("%02d", month + 1) + "-01";
     }
 }

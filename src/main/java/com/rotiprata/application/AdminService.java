@@ -12,6 +12,7 @@ import com.rotiprata.api.dto.AdminUserSearchHistoryResponse;
 import com.rotiprata.api.dto.AdminUserSummaryResponse;
 import com.rotiprata.api.dto.AdminStatsResponse;
 import com.rotiprata.api.dto.ChatbotMessageDTO;
+import com.rotiprata.application.AdminLoggingService.AdminAction;
 import com.rotiprata.domain.AppRole;
 import com.rotiprata.domain.Content;
 import com.rotiprata.domain.ContentTag;
@@ -62,35 +63,22 @@ public class AdminService {
     private final ContentCreatorEnrichmentService contentCreatorEnrichmentService;
     private final ContentService contentService;
     private final UserService userService;
+    private final AdminLoggingService adminLoggingService;
 
     public AdminService(
         SupabaseAdminClient supabaseAdminClient,
         SupabaseAdminRestClient supabaseAdminRestClient,
         ContentCreatorEnrichmentService contentCreatorEnrichmentService,
         ContentService contentService,
-        UserService userService
+        UserService userService,
+        AdminLoggingService adminLoggingService
     ) {
         this.supabaseAdminClient = supabaseAdminClient;
         this.supabaseAdminRestClient = supabaseAdminRestClient;
         this.contentCreatorEnrichmentService = contentCreatorEnrichmentService;
         this.contentService = contentService;
         this.userService = userService;
-    }
-
-    public void logAdminAction(String adminId, String action, UUID targetId, String targetType, String description) {
-        
-        Map<String, Object> logEntry = Map.of(
-            "admin_id", adminId,
-            "action", action,
-            "target_id", targetId,
-            "target_type", targetType,
-            "description", description,
-            "created_at", OffsetDateTime.now() // optional timestamp
-        );
-
-        List<Map<String, Object>> rows = List.of(logEntry);
-
-        supabaseAdminRestClient.postList("audit_logs", rows, MAP_LIST);
+        this.adminLoggingService = adminLoggingService;
     }
 
     public List<Map<String, Object>> getModerationQueue(UUID adminUserId, String accessToken) {
@@ -118,6 +106,8 @@ public class AdminService {
         if (updated.isEmpty()) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Content not found");
         }
+
+        adminLoggingService.logAdminAction(adminUserId, AdminAction.APPROVE_CONTENT, contentId, AdminLoggingService.TargetType.CONTENT, accessToken);
     }
 
     public void rejectContent(UUID adminUserId, UUID contentId, String feedback, String accessToken) {
@@ -135,6 +125,8 @@ public class AdminService {
         if (updated.isEmpty()) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Content not found");
         }
+
+        adminLoggingService.logAdminAction(adminUserId, AdminAction.REJECT_CONTENT, contentId, AdminLoggingService.TargetType.CONTENT, accessToken);
     }
 
     public Content updateContentMetadata(
@@ -166,6 +158,8 @@ public class AdminService {
         }
 
         replaceTags(contentId, request.tags());
+        adminLoggingService.logAdminAction(adminUserId, AdminAction.UPDATE_CONTENT, contentId, AdminLoggingService.TargetType.CONTENT, accessToken);
+
         return updated.get(0);
     }
 
@@ -193,6 +187,8 @@ public class AdminService {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Flag content not found");
         }
         resolvePendingFlagsForContent(contentId, adminUserId);
+
+        adminLoggingService.logAdminAction(adminUserId, AdminAction.RESOLVE_FLAG, flagId, AdminLoggingService.TargetType.FLAG, accessToken);
     }
 
     public void takeDownFlag(UUID adminUserId, UUID flagId, String feedback, String accessToken) {
@@ -219,6 +215,7 @@ public class AdminService {
         }
 
         resolvePendingFlagsForContent(contentId, adminUserId);
+        adminLoggingService.logAdminAction(adminUserId, AdminAction.TAKE_DOWN_CONTENT, contentId, AdminLoggingService.TargetType.CONTENT, accessToken);
     }
 
     public Map<String, Object> getFlagReports(
@@ -415,6 +412,8 @@ public class AdminService {
         insert.put("assigned_by", adminUserId);
         supabaseAdminRestClient.postList("user_roles", insert, USER_ROLE_LIST);
 
+        adminLoggingService.logAdminAction(adminUserId, AdminAction.UPDATE_USER_ROLE, targetUserId, AdminLoggingService.TargetType.USER, accessToken);
+
         return loadUserSummary(targetUserId);
     }
 
@@ -433,6 +432,8 @@ public class AdminService {
         Map<String, Object> update = new LinkedHashMap<>();
         update.put("ban_duration", SUSPENDED_STATUS.equals(normalizedStatus) ? PERMANENT_BAN_DURATION : "none");
         supabaseAdminClient.updateUser(targetUserId, update);
+
+        adminLoggingService.logAdminAction(adminUserId, AdminAction.UPDATE_USER_STATUS, targetUserId, AdminLoggingService.TargetType.USER, accessToken);
 
         return loadUserSummary(targetUserId);
     }
@@ -554,7 +555,11 @@ public class AdminService {
                 MAP_LIST
             );
         }
+
+        adminLoggingService.logAdminAction(adminUserId, AdminAction.RESET_USER_LESSON_PROGRESS, targetUserId, AdminLoggingService.TargetType.USER, accessToken);
     }
+
+    // Private Helps 
 
     private int count(String table, String query) {
         return supabaseAdminRestClient.getList(table, query, MAP_LIST).size();

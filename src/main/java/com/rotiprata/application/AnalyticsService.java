@@ -15,6 +15,7 @@ public class AnalyticsService {
 
     private final ContentService contentService;
     private final SupabaseRestClient supabaseRestClient;
+    private static final TypeReference<List<Map<String, Object>>> MAP_LIST = new TypeReference<>() {};
 
     public AnalyticsService(ContentService contentService, SupabaseRestClient supabaseRestClient) {
         this.contentService = contentService;
@@ -71,25 +72,34 @@ public class AnalyticsService {
     public List<Map<String, Object>> getTopFlagUsers(String accessToken, String month, String year) {
         return supabaseRestClient.rpcList(
             "get_top_flag_users",
-            buildMonthYearParams(month, year),
+            DateUtils.buildMonthYearParams(month, year),
             accessToken,
-            new TypeReference<List<Map<String, Object>>>() {}
+            MAP_LIST
         );
     }
 
-    public List<Map<String, Object>> getTopFlagContent(String accessToken, String month, String year) {
+    public List<Map<String, Object>> getTopFlagContents(String accessToken, String month, String year) {
         return supabaseRestClient.rpcList(
             "get_top_flag_content",
-            buildMonthYearParams(month, year),
+            DateUtils.buildMonthYearParams(month, year),
             accessToken,
-            new TypeReference<List<Map<String, Object>>>() {}
+            MAP_LIST
         );
     }
 
-    // Private helper to convert month/year strings to RPC param map
-    private Map<String, Object> buildMonthYearParams(String month, String year) {
-        int monthInt = Integer.parseInt(month);
-        int yearInt  = Integer.parseInt(year);
-        return Map.of("p_month", monthInt, "p_year", yearInt);
+    public List<Map<String, Object>> getAuditLogs(String accessToken, String month, String year) {
+        String query = DateUtils.buildDateQuery(month, year);
+        // Join profiles table to get display_name
+        String select = "*,profiles(display_name)";
+        
+        List<Map<String, Object>> result =
+        supabaseRestClient.getList(
+            "audit_logs",
+            query + "&select=" + select,  
+            accessToken,
+            MAP_LIST
+        );
+
+        return result;
     }
 }
