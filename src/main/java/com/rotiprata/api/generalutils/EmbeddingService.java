@@ -1,31 +1,24 @@
 package com.rotiprata.api.generalutils;
 
-import org.springframework.stereotype.Service;
-import org.springframework.ai.openai.OpenAiEmbeddingModel;
+/**
+ * Service interface for generating and formatting embeddings.
+ * Provides methods to generate embeddings for text and convert them into Postgres vector format.
+ */
+public interface EmbeddingService {
 
-@Service
-public class EmbeddingService {
+    /**
+     * Generates an embedding vector for the given text.
+     *
+     * @param text the input text
+     * @return a float array representing the embedding
+     */
+    float[] generateEmbedding(String text);
 
-    private final OpenAiEmbeddingModel embeddingModel;
-
-    public EmbeddingService(OpenAiEmbeddingModel embeddingModel) {
-        this.embeddingModel = embeddingModel;
-    }
-
-    public float[] generateEmbedding(String text) {
-        return embeddingModel.embed(text);
-    }
-
-    public String toPgVector(float[] vector) {
-        StringBuilder sb = new StringBuilder("[");
-        for (int i = 0; i < vector.length; i++) {
-            sb.append(vector[i]);
-            if (i < vector.length - 1) {
-                sb.append(",");
-            }
-        }
-        sb.append("]");
-        return sb.toString();
-        }
-
+    /**
+     * Converts a float array embedding into Postgres-compatible vector string format.
+     *
+     * @param vector the embedding vector
+     * @return string in the format "[v1,v2,v3,...]"
+     */
+    String toPgVector(float[] vector);
 }
