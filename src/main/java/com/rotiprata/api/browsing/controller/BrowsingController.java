@@ -2,8 +2,8 @@ package com.rotiprata.api.browsing.controller;
 
 import java.util.List;
 
+import com.rotiprata.api.browsing.dto.ContentSearchDTO;
 import com.rotiprata.api.browsing.service.BrowsingService;
-import com.rotiprata.api.content.dto.ContentSearchDTO;
 
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.oauth2.jwt.Jwt;

@@ -14,14 +14,9 @@ import lombok.Setter;
 @Setter
 @NoArgsConstructor
 public class BrowsingHistory {
-
     private UUID id;
-
     private UUID userId;
-
     private Content content;
-
     private Lesson lesson;
-
     private OffsetDateTime viewedAt = OffsetDateTime.now();
 }

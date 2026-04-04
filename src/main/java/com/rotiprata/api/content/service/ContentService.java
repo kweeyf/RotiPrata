@@ -21,11 +21,11 @@ import org.springframework.web.server.ResponseStatusException;
 import org.springframework.web.util.UriComponentsBuilder;
 
 import com.fasterxml.jackson.core.type.TypeReference;
+import com.rotiprata.api.browsing.dto.ContentSearchDTO;
 import com.rotiprata.api.content.dto.ContentCommentCreateRequest;
 import com.rotiprata.api.content.dto.ContentCommentResponse;
 import com.rotiprata.api.content.dto.ContentFlagRequest;
 import com.rotiprata.api.content.dto.ContentPlaybackEventRequest;
-import com.rotiprata.api.content.dto.ContentSearchDTO;
 import com.rotiprata.api.generalutils.DateUtils;
 import com.rotiprata.api.user.service.UserService;
 import com.rotiprata.domain.AppRole;
