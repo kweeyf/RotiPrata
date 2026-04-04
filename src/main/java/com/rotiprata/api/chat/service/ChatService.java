@@ -1,114 +1,47 @@
 package com.rotiprata.api.chat.service;
 
-import java.time.Instant;
-import java.util.List;
-import java.util.Map;
-
-import org.springframework.stereotype.Service;
-
 import com.rotiprata.api.chat.dto.ChatbotMessageDTO;
-import com.rotiprata.api.lesson.service.LessonService;
-import com.rotiprata.infrastructure.supabase.SupabaseRestClient;
 
-import org.springframework.ai.chat.messages.UserMessage;
-import org.springframework.ai.chat.prompt.Prompt;
-import org.springframework.ai.openai.OpenAiChatModel;
-import com.fasterxml.jackson.core.type.TypeReference;
+import java.util.List;
 
-@Service
-public class ChatService {
+/**
+ * Service interface for chat-related operations.
+ * Handles user questions, chatbot responses, and chat history.
+ */
+public interface ChatService {
 
-    private final OpenAiChatModel openAiChatModel;
-    private final LessonService lessonService;
-    private final SupabaseRestClient supabaseRestClient;
-    private final ModerationService moderationService;
+    /**
+     * Processes a user's question and returns the assistant's response.
+     *
+     * @param accessToken user's access token for authorization
+     * @param question    the question string
+     * @return assistant's answer
+     */
+    String ask(String accessToken, String question);
 
-    public ChatService(OpenAiChatModel openAiChatModel, LessonService lessonService, SupabaseRestClient supabaseRestClient, ModerationService moderationService) {
-        this.openAiChatModel = openAiChatModel;
-        this.lessonService = lessonService;
-        this.supabaseRestClient = supabaseRestClient;
-        this.moderationService = moderationService;
-    }
-  
-    public String ask(String accessToken, String question) {
+    /**
+     * Saves a message (from user or assistant) to the chat history.
+     *
+     * @param accessToken user's access token for authorization
+     * @param message     the message content
+     * @param role        the role of the message sender ("user" or "assistant")
+     */
+    void saveMessages(String accessToken, String message, String role);
 
-        if (moderationService.isFlagged(question)) {
-            return "Your question contains inappropriate content and cannot be processed.";
-        }
+    /**
+     * Fetches the complete chat history for a given user.
+     *
+     * @param accessToken user's access token for authorization
+     * @param userId      the user ID
+     * @return list of messages in chronological order
+     */
+    List<ChatbotMessageDTO> getMessageHistory(String accessToken, String userId);
 
-        saveMessages(accessToken, question, "user");
-
-        String context = lessonService.findRelevantLesson(accessToken, question);
-
-        String prompt = """
-            You are a helpful learning assistant.
-
-            Answer the question using the provided context.
-            Explain in your own words in a simple and friendly way, suitable for a learner.
-            If the answer is not explicitly in the context, you may infer the most likely answer based on clues in the context.
-            If there is truly no way to answer, politely say: 
-            'I'm only able to help with lesson-related questions.'
-
-            Context:
-            %s
-
-            Question:
-            %s
-            """.formatted(context, question);
-    
-        String result = openAiChatModel.call(new Prompt(new UserMessage(prompt)))
-                        .getResult()
-                        .getOutput()
-                        .getText();
-        
-        if (moderationService.isFlagged(result)) {
-            result = "The assistant's response was flagged for inappropriate content.";
-        }
-
-        saveMessages(accessToken, result, "assistant");
-
-        return result;
-    }
-
-    public void saveMessages(String accessToken, String message, String role) {
-
-        ChatbotMessageDTO dto = new ChatbotMessageDTO(
-            role,
-            message, 
-            Instant.now()
-        );
-
-        List<ChatbotMessageDTO> messages = List.of(dto);
-
-        supabaseRestClient.postList(
-            "user_chatbot_history",
-            messages,
-            accessToken,
-            new TypeReference<List<ChatbotMessageDTO>>() {}
-        );
-    }
-
-    public List<ChatbotMessageDTO> getMessageHistory(String accessToken, String userId) {
-
-        String query = "user_id=eq." + userId + "&order=timestamp.asc";
-
-        return supabaseRestClient.getList(
-            "user_chatbot_history",
-            query,
-            accessToken,
-            new TypeReference<List<ChatbotMessageDTO>>() {}
-        );
-    }
-
-    public void deleteMessageHistory(String accessToken, String userId) {
-
-        String query = "user_id=eq." + userId;
-
-        supabaseRestClient.deleteList(
-            "user_chatbot_history", 
-            query, 
-            accessToken, 
-            new TypeReference<List<Map<String, Object>>>() {}
-        );
-    }
+    /**
+     * Deletes all chat history for a given user.
+     *
+     * @param accessToken user's access token for authorization
+     * @param userId      the user ID
+     */
+    void deleteMessageHistory(String accessToken, String userId);
 }
