@@ -1,4 +1,4 @@
-package com.rotiprata.domain;
+package com.rotiprata.api.user.domain;
 
 import java.time.OffsetDateTime;
 import java.util.UUID;
@@ -12,17 +12,13 @@ import lombok.Setter;
 @Getter
 @Setter
 @NoArgsConstructor
-public class ModerationQueue {
+public class UserConceptMastered {
 
     private UUID id;
 
+    private UUID userId;
+
     private Content content;
 
-    private OffsetDateTime submittedAt = OffsetDateTime.now();
-
-    private Integer priority = 0;
-
-    private UUID assignedTo;
-
-    private String notes;
+    private OffsetDateTime masteredAt = OffsetDateTime.now();
 }
