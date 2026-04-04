@@ -88,7 +88,7 @@ public class AdminAnalyticsService {
     public List<Map<String, Object>> getAuditLogs(String month, String year) {
         String query = DateUtils.buildDateQuery(month, year);
         // Join profiles table to get display_name
-        String select = "*,profiles(display_name)";
+        String select = "*,profiles(user_id,display_name)";
         
         List<Map<String, Object>> result =
         supabaseAdminRestClient.getList(

@@ -26,14 +26,17 @@ import type { AdminUserSummary } from "@/types";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 type TopItem = { name: string; count: number; id: string };
-type AuditLog = { admin: string; action: string; targetId: string | number; time: string };
+type AuditLog = { admin: string; adminId: string; action: string; targetId: string | number; time: string };
 type ExportSection = { id: string; label: string; description: string };
 type CSVRow = Record<string, string | number | boolean | null | undefined>;
 type TooltipPayloadItem = { value: number };
 type TooltipProps = { active?: boolean; payload?: TooltipPayloadItem[]; label?: string };
 type AuditLogApiItem = AuditLogItem & {
   action_type?: string | null;
-  profiles?: { display_name?: string | null } | null;
+    profiles?: { 
+      admin_id?: string | null;           
+      display_name?: string | null; 
+    } | null;
 };
 
 // ── Constants ─────────────────────────────────────────────────────────────────
@@ -375,8 +378,10 @@ const AdminAnalytics = () => {
         setTopContent(topContentData.map((c) => ({ name: c.content_title || "Untitled", count: c.flag_count, id: c.content_id })));
 
         const logs = await getAuditLogs(monthStr, yearStr);
+        console.log(logs)
         setAuditLogs(logs.map((log: AuditLogApiItem) => ({
-          admin: log.admin_name ?? log.profiles?.display_name ?? "Unknown",
+          admin: log.profiles?.display_name ?? "Unknown",
+          adminId: log.admin_id, 
           action: log.action_type || log.action || "UNKNOWN",
           targetId: log.target_id ?? 0,
           time: log.created_at
@@ -703,13 +708,20 @@ const AdminAnalytics = () => {
                     className="border-t border-gray-50 dark:border-white/[0.04] hover:bg-gray-50/80 dark:hover:bg-white/[0.02] transition-colors"
                   >
                     <td className="px-6 py-3.5">
-                      <div className="flex items-center gap-3">
-                        <div className="w-7 h-7 rounded-full bg-gray-100 dark:bg-white/[0.07] flex items-center justify-center text-gray-600 dark:text-neutral-400 text-xs font-bold">
-                          {log.admin[0]}
-                        </div>
-                        <span className="text-sm font-medium text-gray-700 dark:text-neutral-300">{log.admin}</span>
-                      </div>
-                    </td>
+  <div className="flex items-center gap-3">
+    <div className="w-8 h-8 rounded-full bg-[#ff385c]/10 dark:bg-[#ff385c]/15 flex items-center justify-center text-[#ff385c] text-xs font-bold">
+      {log.admin[0].toUpperCase()}
+    </div>
+    <button
+      className="text-sm font-medium text-gray-800 dark:text-neutral-200 hover:text-[#ff385c] dark:hover:text-[#ff385c] transition-colors"
+      onClick={() => {
+        void openUser(log.adminId); // <-- pass the admin user ID
+      }}
+    >
+      {log.admin}
+    </button>
+  </div>
+</td>
                     <td className="px-6 py-3.5">
                       <span className={`inline-block text-[11px] font-semibold tracking-wide border rounded-full px-3 py-1 ${meta.light} ${meta.dark}`}>
                         {log.action}
