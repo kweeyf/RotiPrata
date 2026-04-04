@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from "react";
 import { MainLayout } from "@/components/layout/MainLayout";
-import { UserDetailModal, UserSummary } from "@/components/ui/UserDetailModel";
+import { AdminUserDetailPanel } from "@/components/admin/AdminUserDetailPanel";
 import {
   BarChart,
   Bar,
@@ -17,8 +17,14 @@ import {
   getTopFlagContent,
   getAuditLogs,
   fetchAdminUserDetail,
+  toggleUserRole,
+  toggleUserStatus,
+  resetLessonProgress,
+  deleteComment,
+  takeDownContent,
   FlagByDate,
 } from "@/lib/api";
+import type { AdminUserDetail, AppRole, Content } from "@/types";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 type TopItem = { name: string; count: number; id: string };
@@ -27,30 +33,30 @@ type ExportSection = { id: string; label: string; description: string };
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 const actionMeta: Record<string, { light: string; dark: string }> = {
-  DELETE_CONTENT:  {
+  DELETE_CONTENT: {
     light: "text-red-500 bg-red-50 border-red-200",
-    dark:  "dark:text-red-400 dark:bg-red-400/10 dark:border-red-400/25",
+    dark: "dark:text-red-400 dark:bg-red-400/10 dark:border-red-400/25",
   },
   BAN_USER: {
     light: "text-orange-500 bg-orange-50 border-orange-200",
-    dark:  "dark:text-orange-400 dark:bg-orange-400/10 dark:border-orange-400/25",
+    dark: "dark:text-orange-400 dark:bg-orange-400/10 dark:border-orange-400/25",
   },
   WARN_USER: {
     light: "text-amber-600 bg-amber-50 border-amber-200",
-    dark:  "dark:text-amber-400 dark:bg-amber-400/10 dark:border-amber-400/25",
+    dark: "dark:text-amber-400 dark:bg-amber-400/10 dark:border-amber-400/25",
   },
   APPROVE_CONTENT: {
     light: "text-emerald-600 bg-emerald-50 border-emerald-200",
-    dark:  "dark:text-emerald-400 dark:bg-emerald-400/10 dark:border-emerald-400/25",
+    dark: "dark:text-emerald-400 dark:bg-emerald-400/10 dark:border-emerald-400/25",
   },
 };
 
 const EXPORT_SECTIONS: ExportSection[] = [
-  { id: "flagTrend",  label: "Flag trend",          description: "Daily flag counts for selected month"   },
-  { id: "topUsers",   label: "Top flagged users",    description: "Users with most flags this period"      },
-  { id: "topContent", label: "Top flagged content",  description: "Content items with most flags"          },
-  { id: "auditLogs",  label: "Audit logs",           description: "Admin actions and timestamps"           },
-  { id: "kpi",        label: "KPI summary",          description: "Total flags, peak day, avg review time" },
+  { id: "flagTrend",  label: "Flag trend",         description: "Daily flag counts for selected month"   },
+  { id: "topUsers",   label: "Top flagged users",   description: "Users with most flags this period"      },
+  { id: "topContent", label: "Top flagged content", description: "Content items with most flags"          },
+  { id: "auditLogs",  label: "Audit logs",          description: "Admin actions and timestamps"           },
+  { id: "kpi",        label: "KPI summary",         description: "Total flags, peak day, avg review time" },
 ];
 
 // ── Utilities ─────────────────────────────────────────────────────────────────
@@ -70,7 +76,7 @@ function exportToCSV(filename: string, rows: Record<string, any>[]) {
   URL.revokeObjectURL(url);
 }
 
-// ── useDarkMode — watches the `dark` class on <html> reactively ───────────────
+// ── useDarkMode ───────────────────────────────────────────────────────────────
 function useDarkMode(): boolean {
   const [isDark, setIsDark] = useState(
     () => typeof document !== "undefined" && document.documentElement.classList.contains("dark")
@@ -86,7 +92,6 @@ function useDarkMode(): boolean {
 }
 
 // ── Sub-components ────────────────────────────────────────────────────────────
-
 const CustomTooltip = ({ active, payload, label }: any) => {
   if (!active || !payload?.length) return null;
   return (
@@ -131,6 +136,111 @@ const Card = ({ children, className = "" }: { children: React.ReactNode; classNa
 );
 
 const Divider = () => <div className="border-b border-gray-50 dark:border-white/[0.05]" />;
+
+// ── User Detail Drawer ────────────────────────────────────────────────────────
+// Wraps AdminUserDetailPanel in a slide-over drawer with a close button.
+const UserDetailDrawer = ({
+  open,
+  user,
+  isLoading,
+  userActionKey,
+  currentAdminUserId,
+  adminCount,
+  onClose,
+  onToggleRole,
+  onToggleStatus,
+  onResetLessonProgress,
+  onDeleteComment,
+  onTakeDownContent,
+}: {
+  open: boolean;
+  user: AdminUserDetail | null;
+  isLoading: boolean;
+  userActionKey: string | null;
+  currentAdminUserId: string | null;
+  adminCount: number;
+  onClose: () => void;
+  onToggleRole: (userId: string, nextRole: AppRole) => void | Promise<void>;
+  onToggleStatus: (user: AdminUserDetail["summary"]) => void | Promise<void>;
+  onResetLessonProgress: (lessonId: string | null) => void | Promise<void>;
+  onDeleteComment: (commentId: string, contentId: string | null) => void | Promise<void>;
+  onTakeDownContent: (content: Content) => void;
+}) => {
+  // Lock body scroll when open
+  useEffect(() => {
+    document.body.style.overflow = open ? "hidden" : "";
+    return () => { document.body.style.overflow = ""; };
+  }, [open]);
+
+  return (
+    <>
+      {/* Backdrop */}
+      <div
+        className={`fixed inset-0 z-40 bg-black/40 dark:bg-black/60 backdrop-blur-sm transition-opacity duration-300 ${
+          open ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"
+        }`}
+        onClick={onClose}
+      />
+
+      {/* Drawer panel */}
+      <div
+        className={`fixed inset-y-0 right-0 z-50 w-full max-w-2xl flex flex-col
+          bg-white dark:bg-[#111111]
+          border-l border-gray-100 dark:border-white/[0.06]
+          shadow-2xl dark:shadow-black/60
+          transition-transform duration-300 ease-in-out
+          ${open ? "translate-x-0" : "translate-x-full"}`}
+      >
+        {/* Drawer header */}
+        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100 dark:border-white/[0.06] shrink-0">
+          <div>
+            <p className="text-[10px] font-semibold uppercase tracking-widest text-gray-400 dark:text-neutral-500 mb-0.5">
+              USER DETAIL
+            </p>
+            <h2 className="text-lg font-bold text-gray-900 dark:text-white">
+              {isLoading ? "Loading…" : user?.summary.displayName ?? "Unknown User"}
+            </h2>
+          </div>
+          <button
+            onClick={onClose}
+            className="w-8 h-8 flex items-center justify-center rounded-full border border-gray-200 dark:border-white/10 text-gray-500 dark:text-neutral-400 hover:bg-gray-50 dark:hover:bg-white/[0.05] transition-colors"
+            aria-label="Close"
+          >
+            <svg className="w-4 h-4" viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.8">
+              <path d="M1 1l12 12M13 1L1 13" />
+            </svg>
+          </button>
+        </div>
+
+        {/* Drawer body — scrollable */}
+        <div className="flex-1 overflow-y-auto">
+          {isLoading ? (
+            <div className="flex items-center justify-center h-48">
+              <div className="w-7 h-7 border-2 border-[#ff385c]/30 border-t-[#ff385c] rounded-full animate-spin" />
+            </div>
+          ) : user ? (
+            <AdminUserDetailPanel
+              user={user}
+              userActionKey={userActionKey}
+              currentAdminUserId={currentAdminUserId}
+              adminCount={adminCount}
+              onToggleRole={onToggleRole}
+              onToggleStatus={onToggleStatus}
+              onResetLessonProgress={onResetLessonProgress}
+              onDeleteComment={onDeleteComment}
+              onTakeDownContent={onTakeDownContent}
+              className="pt-4"
+            />
+          ) : (
+            <div className="flex items-center justify-center h-48">
+              <p className="text-sm text-gray-400 dark:text-neutral-500">No user data available.</p>
+            </div>
+          )}
+        </div>
+      </div>
+    </>
+  );
+};
 
 // ── Export Modal ──────────────────────────────────────────────────────────────
 const ExportModal = ({
@@ -256,20 +366,28 @@ const ExportModal = ({
 
 // ── Main Component ────────────────────────────────────────────────────────────
 const AdminAnalytics = () => {
-  // Watches <html class="dark"> toggled by your profile settings
   const isDark = useDarkMode();
 
-  const [flagTrend, setFlagTrend]           = useState<{ day: string; count: number }[]>([]);
-  const [topUsers, setTopUsers]             = useState<TopItem[]>([]);
-  const [topContent, setTopContent]         = useState<TopItem[]>([]);
-  const [avgReviewTime, setAvgReviewTime]   = useState<number>(0);
-  const [auditLogs, setAuditLogs]           = useState<AuditLog[]>([]);
-  const [monthYear, setMonthYear]           = useState<string>("");
+  // ── Analytics state ───────────────────────────────────────────────────────
+  const [flagTrend, setFlagTrend]         = useState<{ day: string; count: number }[]>([]);
+  const [topUsers, setTopUsers]           = useState<TopItem[]>([]);
+  const [topContent, setTopContent]       = useState<TopItem[]>([]);
+  const [avgReviewTime, setAvgReviewTime] = useState<number>(0);
+  const [auditLogs, setAuditLogs]         = useState<AuditLog[]>([]);
+  const [monthYear, setMonthYear]         = useState<string>("");
 
-  const [selectedUser, setSelectedUser]     = useState<UserSummary | null>(null);
-  const [isModalOpen, setIsModalOpen]       = useState(false);
-  const [isUserLoading, setIsUserLoading]   = useState(false);
+  // ── User detail drawer state ──────────────────────────────────────────────
+  const [drawerOpen, setDrawerOpen]           = useState(false);
+  const [selectedUserDetail, setSelectedUserDetail] = useState<AdminUserDetail | null>(null);
+  const [isUserLoading, setIsUserLoading]     = useState(false);
+  const [userActionKey, setUserActionKey]     = useState<string | null>(null);
 
+  // These would come from your auth context in a real app.
+  // Replace with useAuth() or however you get the current admin's ID.
+  const currentAdminUserId: string | null = null;
+  const adminCount = 1; // fetch from your API if needed
+
+  // ── Period state ──────────────────────────────────────────────────────────
   const today    = new Date();
   const maxYear  = today.getFullYear();
   const maxMonth = today.getMonth();
@@ -279,6 +397,7 @@ const AdminAnalytics = () => {
     return `${t.getFullYear()}-${String(t.getMonth() + 1).padStart(2, "0")}`;
   });
 
+  // ── Helpers ───────────────────────────────────────────────────────────────
   const getDaysInMonth = (year: number, month: number) =>
     new Array(new Date(year, month, 0).getDate()).fill(0).map((_, i) => i + 1);
 
@@ -289,29 +408,91 @@ const AdminAnalytics = () => {
     return days.map((day) => ({ day: day.toString(), count: map[day] || 0 }));
   };
 
+  // ── Open user detail in drawer ────────────────────────────────────────────
   const handleOpenUserDetail = async (userId: string) => {
+    setDrawerOpen(true);
     setIsUserLoading(true);
+    setSelectedUserDetail(null);
     try {
-      const profile = await fetchAdminUserDetail(userId);
-      const s = profile.summary;
-      setSelectedUser({
-        userId: s.userId,
-        displayName: s.displayName ?? "Unknown",
-        email: s.email ?? "",
-        status: s.status ?? "active",
-        roles: s.roles ?? [],
-        createdAt: s.createdAt ?? "",
-        lastSignInAt: s.lastSignInAt ?? "",
-        lastActivityDate: s.lastActivityDate ?? "",
-      });
-      setIsModalOpen(true);
+      const detail = await fetchAdminUserDetail(userId);
+      setSelectedUserDetail(detail);
     } catch (err) {
-      console.error("Failed to fetch user profile:", err);
+      console.error("Failed to fetch user detail:", err);
     } finally {
       setIsUserLoading(false);
     }
   };
 
+  // ── Panel action handlers ─────────────────────────────────────────────────
+  const handleToggleRole = async (userId: string, nextRole: AppRole) => {
+    const key = `role:${userId}:${nextRole}`;
+    setUserActionKey(key);
+    try {
+      await toggleUserRole(userId, nextRole);
+      // Refresh the user detail after the action
+      const updated = await fetchAdminUserDetail(userId);
+      setSelectedUserDetail(updated);
+    } catch (err) {
+      console.error("Failed to toggle role:", err);
+    } finally {
+      setUserActionKey(null);
+    }
+  };
+
+  const handleToggleStatus = async (user: AdminUserDetail["summary"]) => {
+    const nextStatus = user.status === "active" ? "suspended" : "active";
+    const key = `status:${user.userId}:${nextStatus}`;
+    setUserActionKey(key);
+    try {
+      await toggleUserStatus(user);
+      const updated = await fetchAdminUserDetail(user.userId);
+      setSelectedUserDetail(updated);
+    } catch (err) {
+      console.error("Failed to toggle status:", err);
+    } finally {
+      setUserActionKey(null);
+    }
+  };
+
+  const handleResetLessonProgress = async (lessonId: string | null) => {
+    if (!lessonId || !selectedUserDetail) return;
+    const key = `progress:${lessonId}`;
+    setUserActionKey(key);
+    try {
+      await resetLessonProgress(lessonId);
+      const updated = await fetchAdminUserDetail(selectedUserDetail.summary.userId);
+      setSelectedUserDetail(updated);
+    } catch (err) {
+      console.error("Failed to reset progress:", err);
+    } finally {
+      setUserActionKey(null);
+    }
+  };
+
+  const handleDeleteComment = async (commentId: string, contentId: string | null) => {
+    if (!selectedUserDetail) return;
+    const key = `comment:${commentId}`;
+    setUserActionKey(key);
+    try {
+      await deleteComment(commentId, contentId);
+      const updated = await fetchAdminUserDetail(selectedUserDetail.summary.userId);
+      setSelectedUserDetail(updated);
+    } catch (err) {
+      console.error("Failed to delete comment:", err);
+    } finally {
+      setUserActionKey(null);
+    }
+  };
+
+  const handleTakeDownContent = (content: Content) => {
+    void takeDownContent(content).then(async () => {
+      if (!selectedUserDetail) return;
+      const updated = await fetchAdminUserDetail(selectedUserDetail.summary.userId);
+      setSelectedUserDetail(updated);
+    });
+  };
+
+  // ── Load analytics ────────────────────────────────────────────────────────
   useEffect(() => {
     const load = async () => {
       const [yearStr, monthStr] = selectedMonth.split("-");
@@ -342,9 +523,7 @@ const AdminAnalytics = () => {
             : "",
         })));
 
-        setMonthYear(
-          new Date(year, month - 1, 1).toLocaleDateString("en-GB", { month: "long", year: "numeric" })
-        );
+        setMonthYear(new Date(year, month - 1, 1).toLocaleDateString("en-GB", { month: "long", year: "numeric" }));
       } catch (err) {
         console.error("Failed to fetch analytics:", err);
       }
@@ -352,31 +531,23 @@ const AdminAnalytics = () => {
     load();
   }, [selectedMonth]);
 
+  // ── Derived values ────────────────────────────────────────────────────────
   const totalFlags = flagTrend.reduce((a, d) => a + d.count, 0);
   const maxFlags   = Math.max(...flagTrend.map((d) => d.count), 0);
 
   const reviewAccent =
-    avgReviewTime > 20
-      ? "text-red-500 dark:text-red-400"
-      : avgReviewTime > 10
-      ? "text-amber-500 dark:text-amber-400"
-      : "text-emerald-500 dark:text-emerald-400";
+    avgReviewTime > 20 ? "text-red-500 dark:text-red-400"
+    : avgReviewTime > 10 ? "text-amber-500 dark:text-amber-400"
+    : "text-emerald-500 dark:text-emerald-400";
 
   const reviewStroke = avgReviewTime > 20 ? "#ef4444" : avgReviewTime > 10 ? "#f59e0b" : "#10b981";
-
-  // Ring track colour comes from JS since SVG can't use Tailwind dark: variants
-  const ringTrack = isDark ? "#2a2a2a" : "#f3f4f6";
-
+  const ringTrack    = isDark ? "#2a2a2a" : "#f3f4f6";
   const reviewStatus =
-    avgReviewTime > 20
-      ? "⚠ High — needs attention"
-      : avgReviewTime > 10
-      ? "△ Moderate"
-      : avgReviewTime > 0
-      ? "✓ Within target"
-      : "";
+    avgReviewTime > 20 ? "⚠ High — needs attention"
+    : avgReviewTime > 10 ? "△ Moderate"
+    : avgReviewTime > 0 ? "✓ Within target"
+    : "";
 
-  // Chart colours driven by isDark so Recharts (which uses inline styles) responds
   const gridColor   = isDark ? "rgba(255,255,255,0.05)" : "#f3f4f6";
   const tickColor   = isDark ? "#555555" : "#9ca3af";
   const cursorColor = isDark ? "rgba(255,255,255,0.04)" : "rgba(0,0,0,0.04)";
@@ -390,11 +561,6 @@ const AdminAnalytics = () => {
 
   return (
     <MainLayout>
-      {/*
-        Page background:
-          Light → gray-50
-          Dark  → #111111 (near-black, matching the screenshot)
-      */}
       <div
         className="min-h-screen bg-gray-50 dark:bg-[#111111] text-gray-900 dark:text-white p-6 md:p-10 space-y-5 transition-colors duration-200"
         style={{ fontFamily: "'Geist', 'DM Sans', system-ui, sans-serif" }}
@@ -416,7 +582,6 @@ const AdminAnalytics = () => {
             </div>
 
             <div className="flex items-center gap-3 flex-wrap">
-              {/* Period selector */}
               <div className="flex items-center gap-2 border border-gray-200 dark:border-white/10 rounded-full px-4 py-2 bg-white dark:bg-[#1a1a1a] shadow-sm transition-colors duration-200">
                 <span className="text-xs text-gray-400 dark:text-neutral-500 font-medium">Period:</span>
 
@@ -486,7 +651,6 @@ const AdminAnalytics = () => {
         {/* ── Charts ──────────────────────────────────────── */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
 
-          {/* Flag Trend */}
           <Card className="p-6">
             <div className="mb-5">
               <p className="text-[10px] font-semibold uppercase tracking-widest text-gray-400 dark:text-neutral-500 mb-1">FLAG TREND</p>
@@ -502,19 +666,13 @@ const AdminAnalytics = () => {
                   tickLine={false}
                   label={{ value: "Day", position: "insideBottom", offset: -16, fill: tickColor, fontSize: 12 }}
                 />
-                <YAxis
-                  tick={{ fill: tickColor, fontSize: 11 }}
-                  axisLine={false}
-                  tickLine={false}
-                  allowDecimals={false}
-                />
+                <YAxis tick={{ fill: tickColor, fontSize: 11 }} axisLine={false} tickLine={false} allowDecimals={false} />
                 <Tooltip content={<CustomTooltip />} cursor={{ fill: cursorColor, radius: 4 }} />
                 <Bar dataKey="count" fill="#ff385c" radius={[4, 4, 0, 0]} maxBarSize={16} />
               </BarChart>
             </ResponsiveContainer>
           </Card>
 
-          {/* Avg Review Time Ring */}
           <Card className="p-6 flex flex-col items-center justify-center">
             <div className="w-full mb-4">
               <p className="text-[10px] font-semibold uppercase tracking-widest text-gray-400 dark:text-neutral-500 mb-1">AVERAGE REVIEW TIME</p>
@@ -522,7 +680,6 @@ const AdminAnalytics = () => {
             </div>
             <div className="relative flex items-center justify-center">
               <svg width="148" height="148">
-                {/* Track ring: light gray in light mode, dark gray in dark mode */}
                 <circle cx="74" cy="74" r="58" fill="none" stroke={ringTrack} strokeWidth="10" />
                 <circle
                   cx="74" cy="74" r="58"
@@ -560,7 +717,6 @@ const AdminAnalytics = () => {
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
 
-            {/* Top Flagged Users */}
             <div>
               <p className="text-xs font-semibold text-gray-400 dark:text-neutral-500 mb-4 uppercase tracking-widest">
                 Top Flagged Users
@@ -575,9 +731,10 @@ const AdminAnalytics = () => {
                       <div className="w-8 h-8 rounded-full bg-[#ff385c]/10 dark:bg-[#ff385c]/15 flex items-center justify-center text-[#ff385c] text-xs font-bold">
                         {user.name[0].toUpperCase()}
                       </div>
+                      {/* Clicking the name opens the drawer */}
                       <button
                         className="text-sm font-medium text-gray-800 dark:text-neutral-200 hover:text-[#ff385c] dark:hover:text-[#ff385c] transition-colors"
-                        onClick={() => handleOpenUserDetail(user.id!)}
+                        onClick={() => handleOpenUserDetail(user.id)}
                       >
                         {user.name}
                       </button>
@@ -589,16 +746,13 @@ const AdminAnalytics = () => {
                           style={{ width: `${(user.count / (topUsers[0]?.count || 1)) * 100}%`, transition: "width 0.6s ease" }}
                         />
                       </div>
-                      <span className="text-sm font-bold text-gray-700 dark:text-neutral-300 w-5 text-right">
-                        {user.count}
-                      </span>
+                      <span className="text-sm font-bold text-gray-700 dark:text-neutral-300 w-5 text-right">{user.count}</span>
                     </div>
                   </div>
                 ))}
               </div>
             </div>
 
-            {/* Top Flagged Content */}
             <div>
               <p className="text-xs font-semibold text-gray-400 dark:text-neutral-500 mb-4 uppercase tracking-widest">
                 Top Flagged Content
@@ -613,9 +767,7 @@ const AdminAnalytics = () => {
                       <div className="w-8 h-8 rounded-xl bg-gray-100 dark:bg-white/[0.06] flex items-center justify-center text-sm">
                         📄
                       </div>
-                      <span className="text-sm font-medium text-gray-800 dark:text-neutral-200 max-w-[160px] truncate">
-                        {c.name}
-                      </span>
+                      <span className="text-sm font-medium text-gray-800 dark:text-neutral-200 max-w-[160px] truncate">{c.name}</span>
                     </div>
                     <div className="flex items-center gap-3">
                       <div className="h-1.5 rounded-full bg-gray-100 dark:bg-white/[0.08] overflow-hidden" style={{ width: 80 }}>
@@ -624,9 +776,7 @@ const AdminAnalytics = () => {
                           style={{ width: `${(c.count / (topContent[0]?.count || 1)) * 100}%`, transition: "width 0.6s ease" }}
                         />
                       </div>
-                      <span className="text-sm font-bold text-gray-700 dark:text-neutral-300 w-5 text-right">
-                        {c.count}
-                      </span>
+                      <span className="text-sm font-bold text-gray-700 dark:text-neutral-300 w-5 text-right">{c.count}</span>
                     </div>
                   </div>
                 ))}
@@ -687,13 +837,20 @@ const AdminAnalytics = () => {
 
       </div>
 
-      <UserDetailModal
-        isOpen={isModalOpen}
-        user={selectedUser}
+      {/* ── User Detail Drawer ──────────────────────────────── */}
+      <UserDetailDrawer
+        open={drawerOpen}
+        user={selectedUserDetail}
         isLoading={isUserLoading}
-        onClose={() => setIsModalOpen(false)}
-        onUpdateRole={(userId, role) => console.log("Change role", userId, role)}
-        onToggleStatus={(user) => console.log("Toggle status", user)}
+        userActionKey={userActionKey}
+        currentAdminUserId={currentAdminUserId}
+        adminCount={adminCount}
+        onClose={() => setDrawerOpen(false)}
+        onToggleRole={handleToggleRole}
+        onToggleStatus={handleToggleStatus}
+        onResetLessonProgress={handleResetLessonProgress}
+        onDeleteComment={handleDeleteComment}
+        onTakeDownContent={handleTakeDownContent}
       />
     </MainLayout>
   );
