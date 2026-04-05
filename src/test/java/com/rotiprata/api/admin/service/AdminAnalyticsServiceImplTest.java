@@ -13,7 +13,6 @@ import org.mockito.MockitoAnnotations;
 
 import java.util.List;
 import java.util.Map;
-import java.time.Instant;
 import java.util.Collections;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -272,65 +271,85 @@ class AdminAnalyticsServiceImplTest {
 
     @Test
     void getFlaggedContentByMonthAndYear_ShouldReturnEmptyList_WhenServiceThrows() {
+        // Arrange
         when(contentService.getFlaggedContentByMonthAndYear(anyString(), anyString(), anyString()))
             .thenThrow(new RuntimeException("service error"));
 
+        // Act
         List<Map<String, Object>> result = service.getFlaggedContentByMonthAndYear("token", "3", "2026");
 
+        // Assert
         assertNotNull(result);
         assertTrue(result.isEmpty());
 
+        // Verify
         verify(contentService, times(1)).getFlaggedContentByMonthAndYear("token", "3", "2026");
     }
 
     @Test
     void getAverageReviewTimeByMonthAndYear_ShouldReturnZero_WhenServiceThrows() {
+        // Arrange
         when(contentService.getFlaggedContentByMonthAndYear(anyString(), anyString(), anyString()))
             .thenThrow(new RuntimeException("service error"));
 
+        // Act
         double result = service.getAverageReviewTimeByMonthAndYear("token", "3", "2026");
 
+        // Assert
         assertEquals(0.0, result);
 
+        // Verify
         verify(contentService, times(1)).getFlaggedContentByMonthAndYear("token", "3", "2026");
     }
 
     @Test
     void getTopFlagUsers_ShouldReturnEmptyList_WhenRpcThrows() {
+        // Arrange
         when(supabaseAdminRestClient.rpcList(anyString(), any(), any()))
             .thenThrow(new RuntimeException("RPC error"));
 
+        // Act
         List<Map<String, Object>> result = service.getTopFlagUsers("3", "2026");
 
+        // Assert
         assertNotNull(result);
         assertTrue(result.isEmpty());
 
+        // Verify
         verify(supabaseAdminRestClient, times(1)).rpcList(anyString(), any(), any());
     }
 
     @Test
     void getTopFlagContents_ShouldReturnEmptyList_WhenRpcThrows() {
+        // Arrange
         when(supabaseAdminRestClient.rpcList(anyString(), any(), any()))
             .thenThrow(new RuntimeException("RPC error"));
 
+        // Act
         List<Map<String, Object>> result = service.getTopFlagContents("3", "2026");
 
+        // Assert
         assertNotNull(result);
         assertTrue(result.isEmpty());
 
+        // Verify
         verify(supabaseAdminRestClient, times(1)).rpcList(anyString(), any(), any());
     }
 
     @Test
     void getAuditLogs_ShouldReturnEmptyList_WhenRpcThrows() {
+        // Arrange
         when(supabaseAdminRestClient.getList(anyString(), anyString(), any()))
             .thenThrow(new RuntimeException("RPC error"));
 
+        // Act
         List<Map<String, Object>> result = service.getAuditLogs("3", "2026");
 
+        // Assert
         assertNotNull(result);
         assertTrue(result.isEmpty());
 
+        // Verify
         verify(supabaseAdminRestClient, times(1)).getList(anyString(), anyString(), any());
     }
 }

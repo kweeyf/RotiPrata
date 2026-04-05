@@ -26,6 +26,13 @@ public class BrowsingServiceImpl implements BrowsingService {
     private final LessonService lessonService;
     private final SupabaseRestClient supabaseRestClient;
 
+    // Constant
+    private static final String TABLE_HISTORY = "search_history";
+    private static final String TYPE_LESSON = "lesson";
+    private static final String TYPE_VIDEO = "video";
+
+    private static final int SNIPPET_LENGTH = 100;
+
     /**
      * Constructor for dependency injection.
      */
@@ -46,21 +53,21 @@ public class BrowsingServiceImpl implements BrowsingService {
         String normalizedFilter = filter == null ? "" : filter.trim().toLowerCase();
 
         switch (normalizedFilter) {
-            case "" -> {
-                results.addAll(contentService.getFilteredContent(query, null, accessToken));
-                results.addAll(mapLessonsToSearchResults(lessonService.searchLessons(query, accessToken)));
-            }
-            case "video" -> results.addAll(contentService.getFilteredContent(query, "video", accessToken));
-            case "lesson" -> results.addAll(mapLessonsToSearchResults(lessonService.searchLessons(query, accessToken)));
-            default -> {
-                // Unknown filter: return empty results
-            }
+        case "" -> {
+            results.addAll(contentService.getFilteredContent(query, null, accessToken));
+            results.addAll(mapLessonsToSearchResults(lessonService.searchLessons(query, accessToken)));
         }
+        case TYPE_VIDEO -> results.addAll(contentService.getFilteredContent(query, TYPE_VIDEO, accessToken));
+        case TYPE_LESSON -> results.addAll(mapLessonsToSearchResults(lessonService.searchLessons(query, accessToken)));
+        default -> {
+            // Unknown filter: return empty results
+        }
+    }
 
         return results;
     }
 
-    /** Saves or updates a user's search history entry */
+    /** Upsert a user's search history entry */
     @Override
     public void saveHistory(String userId, String query, Instant searchedAt, String accessToken) {
         String normalizedQuery = query == null ? "" : query.trim();
@@ -75,7 +82,7 @@ public class BrowsingServiceImpl implements BrowsingService {
 
         try {
             supabaseRestClient.upsertList(
-                    "search_history",
+                    TABLE_HISTORY,
                     dbQuery,
                     List.of(dto),
                     accessToken,
@@ -92,7 +99,7 @@ public class BrowsingServiceImpl implements BrowsingService {
         String query = "user_id=eq." + userId + "&order=searched_at.desc&limit=5";
         try {
             return supabaseRestClient.getList(
-                    "search_history",
+                    TABLE_HISTORY,
                     query,
                     accessToken,
                     new TypeReference<List<GetHistoryDTO>>() {}
@@ -104,6 +111,7 @@ public class BrowsingServiceImpl implements BrowsingService {
 
     // ================= CLEAR HISTORY =================
 
+    /** Deletes a search history entry by its ID, scoped to the given user */
     @Override
     public void deleteHistoryById(String id, String userId, String accessToken) {
         if (id == null || id.isBlank()) return;
@@ -111,7 +119,7 @@ public class BrowsingServiceImpl implements BrowsingService {
         String query = "id=eq." + id + "&user_id=eq." + userId;
         try {
             supabaseRestClient.deleteList(
-                    "search_history",
+                    TABLE_HISTORY,
                     query,
                     accessToken,
                     new TypeReference<List<Map<String, Object>>>() {}
@@ -145,8 +153,8 @@ public class BrowsingServiceImpl implements BrowsingService {
     /** Builds a short snippet from the description */
     private String buildSnippet(String description) {
         if (description == null) return null;
-        return description.length() > 100
-                ? description.substring(0, 100) + "..."
+        return description.length() > SNIPPET_LENGTH
+                ? description.substring(0, SNIPPET_LENGTH) + "..."
                 : description;
     }
 
