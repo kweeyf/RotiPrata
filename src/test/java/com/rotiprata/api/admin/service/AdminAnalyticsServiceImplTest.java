@@ -31,7 +31,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
-@DisplayName("AdminAnalyticsServiceImpl Unit Tests - Restored Coverage")
+@DisplayName("AdminAnalyticsServiceImpl tests")
 class AdminAnalyticsServiceImplTest {
 
     @Mock

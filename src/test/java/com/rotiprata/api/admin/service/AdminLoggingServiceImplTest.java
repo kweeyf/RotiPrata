@@ -9,6 +9,9 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.junit.jupiter.MockitoExtension;
+import org.junit.jupiter.api.DisplayName;
 
 import java.util.List;
 import java.util.Map;
@@ -21,9 +24,9 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 import static org.junit.jupiter.api.Assertions.*;
 
+@ExtendWith(MockitoExtension.class)
+@DisplayName("AdminAnalyticsServiceImpl tests")
 class AdminLoggingServiceImplTest {
-
-    private static final TypeReference<List<Map<String, Object>>> MAP_LIST = new TypeReference<>() {};
 
     @Mock
     private SupabaseAdminRestClient supabaseAdminRestClient;

@@ -27,7 +27,7 @@ import static org.springframework.security.test.web.servlet.request.SecurityMock
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.MOCK)
 @AutoConfigureMockMvc
-@DisplayName("Admin Analytics Mock Controller Tests")
+@DisplayName("AdminAnalytics Mock Integration Tests")
 class AdminAnalyticsMockIntegrationTest {
 
     @Autowired
