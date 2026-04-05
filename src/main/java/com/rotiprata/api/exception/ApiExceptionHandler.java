@@ -58,6 +58,17 @@ public class ApiExceptionHandler {
         return ResponseEntity.status(status).body(body);
     }
 
+    @ExceptionHandler(RuntimeException.class)
+    public ResponseEntity<ApiErrorResponse> handleRuntime(RuntimeException ex) {
+        ApiErrorResponse body = new ApiErrorResponse(
+            "error",
+            ex.getMessage() != null ? ex.getMessage() : "Internal server error",
+            null,
+            null
+        );
+        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(body);
+    }
+
     private String mapStatusToCode(HttpStatus status, String message) {
         if (status == HttpStatus.UNAUTHORIZED) {
             return "invalid_credentials";

@@ -9,7 +9,6 @@ import com.rotiprata.api.lesson.service.LessonService;
 import com.rotiprata.infrastructure.supabase.SupabaseRestClient;
 
 import org.springframework.stereotype.Service;
-import org.springframework.web.util.UriComponentsBuilder;
 
 import java.time.Instant;
 import java.util.ArrayList;
@@ -40,37 +39,28 @@ public class BrowsingServiceImpl implements BrowsingService {
         this.supabaseRestClient = supabaseRestClient;
     }
 
-    // ================= SEARCH =================
-
+    /** Performs a search across content and lessons based on query and optional filter */
     @Override
     public List<ContentSearchDTO> search(String query, String filter, String accessToken) {
         List<ContentSearchDTO> results = new ArrayList<>();
         String normalizedFilter = filter == null ? "" : filter.trim().toLowerCase();
 
-        if (normalizedFilter.isBlank()) {
-            results.addAll(contentService.getFilteredContent(query, null, accessToken));
-            results.addAll(mapLessonsToSearchResults(
-                    lessonService.searchLessons(query, accessToken)
-            ));
-            return results;
-        }
-
-        if ("video".equals(normalizedFilter)) {
-            results.addAll(contentService.getFilteredContent(query, "video", accessToken));
-            return results;
-        }
-
-        if ("lesson".equals(normalizedFilter)) {
-            results.addAll(mapLessonsToSearchResults(
-                    lessonService.searchLessons(query, accessToken)
-            ));
+        switch (normalizedFilter) {
+            case "" -> {
+                results.addAll(contentService.getFilteredContent(query, null, accessToken));
+                results.addAll(mapLessonsToSearchResults(lessonService.searchLessons(query, accessToken)));
+            }
+            case "video" -> results.addAll(contentService.getFilteredContent(query, "video", accessToken));
+            case "lesson" -> results.addAll(mapLessonsToSearchResults(lessonService.searchLessons(query, accessToken)));
+            default -> {
+                // Unknown filter: return empty results
+            }
         }
 
         return results;
     }
 
-    // ================= SAVE HISTORY =================
-
+    /** Saves or updates a user's search history entry */
     @Override
     public void saveHistory(String userId, String query, Instant searchedAt, String accessToken) {
         String normalizedQuery = query == null ? "" : query.trim();
@@ -81,64 +71,35 @@ public class BrowsingServiceImpl implements BrowsingService {
         dto.setQuery(normalizedQuery);
         dto.setSearchedAt(searchedAt != null ? searchedAt : Instant.now());
 
-        String existingQuery = UriComponentsBuilder.newInstance()
-                .queryParam("user_id", "eq." + userId)
-                .queryParam("query", "eq." + normalizedQuery)
-                .queryParam("order", "searched_at.desc")
-                .queryParam("limit", "1")
-                .build()
-                .encode()
-                .toUriString()
-                .replaceFirst("^\\?", "");
+        String dbQuery = "on_conflict=user_id,query";
 
-        List<Map<String, Object>> existing = supabaseRestClient.getList(
-                "search_history",
-                existingQuery,
-                accessToken,
-                new TypeReference<List<Map<String, Object>>>() {}
-        );
-
-        // Update existing entry timestamp if found
-        if (!existing.isEmpty()) {
-            String id = existing.get(0).get("id") == null ? null : existing.get(0).get("id").toString();
-            if (id != null && !id.isBlank()) {
-                supabaseRestClient.patchList(
-                        "search_history",
-                        UriComponentsBuilder.newInstance()
-                                .queryParam("id", "eq." + id)
-                                .queryParam("user_id", "eq." + userId)
-                                .build()
-                                .encode()
-                                .toUriString()
-                                .replaceFirst("^\\?", ""),
-                        Map.of("searched_at", dto.getSearchedAt()),
-                        accessToken,
-                        new TypeReference<List<Map<String, Object>>>() {}
-                );
-                return;
-            }
+        try {
+            supabaseRestClient.upsertList(
+                    "search_history",
+                    dbQuery,
+                    List.of(dto),
+                    accessToken,
+                    new TypeReference<List<Map<String, Object>>>() {}
+            );
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to save search history for user " + userId, e);
         }
-
-        // Insert new history entry if none exists
-        supabaseRestClient.postList(
-                "search_history",
-                dto,
-                accessToken,
-                new TypeReference<List<Map<String, Object>>>() {}
-        );
     }
 
-    // ================= FETCH HISTORY =================
-
+    /** Fetches the last 5 search history entries for a user */
     @Override
     public List<GetHistoryDTO> fetchHistory(String userId, String accessToken) {
         String query = "user_id=eq." + userId + "&order=searched_at.desc&limit=5";
-        return supabaseRestClient.getList(
-                "search_history",
-                query,
-                accessToken,
-                new TypeReference<List<GetHistoryDTO>>() {}
-        );
+        try {
+            return supabaseRestClient.getList(
+                    "search_history",
+                    query,
+                    accessToken,
+                    new TypeReference<List<GetHistoryDTO>>() {}
+            );
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to fetch search history for user " + userId, e);
+        }
     }
 
     // ================= CLEAR HISTORY =================
@@ -148,19 +109,21 @@ public class BrowsingServiceImpl implements BrowsingService {
         if (id == null || id.isBlank()) return;
 
         String query = "id=eq." + id + "&user_id=eq." + userId;
-        supabaseRestClient.deleteList(
-                "search_history",
-                query,
-                accessToken,
-                new TypeReference<List<Map<String, Object>>>() {}
-        );
+        try {
+            supabaseRestClient.deleteList(
+                    "search_history",
+                    query,
+                    accessToken,
+                    new TypeReference<List<Map<String, Object>>>() {}
+            );
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to delete search history entry " + id + " for user " + userId, e);
+        }
     }
 
     // ================= INTERNAL HELPERS =================
 
-    /**
-     * Converts raw lesson maps to ContentSearchDTO objects.
-     */
+    /** Maps lesson objects to search result DTOs */
     private List<ContentSearchDTO> mapLessonsToSearchResults(List<Map<String, Object>> lessons) {
         List<ContentSearchDTO> results = new ArrayList<>();
         for (Map<String, Object> lesson : lessons) {
@@ -179,9 +142,7 @@ public class BrowsingServiceImpl implements BrowsingService {
         return results;
     }
 
-    /**
-     * Truncates description to a snippet of max 100 characters.
-     */
+    /** Builds a short snippet from the description */
     private String buildSnippet(String description) {
         if (description == null) return null;
         return description.length() > 100
@@ -189,9 +150,8 @@ public class BrowsingServiceImpl implements BrowsingService {
                 : description;
     }
 
-    /**
-     * Safely converts an object to string.
-     */
+
+     /** Converts an object to string safely */
     private String toStringValue(Object value) {
         return value == null ? null : value.toString();
     }
