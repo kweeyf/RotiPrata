@@ -91,6 +91,17 @@ public class ApiExceptionHandler {
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(body);
     }
 
+    @ExceptionHandler(IllegalArgumentException.class)
+    public ResponseEntity<ApiErrorResponse> handleIllegalArgument(IllegalArgumentException ex) {
+        ApiErrorResponse body = new ApiErrorResponse(
+            "invalid_argument",
+            ex.getMessage() != null ? ex.getMessage() : "Invalid argument provided",
+            null,
+            null
+        );
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(body);
+    }
+    
     private String mapStatusToCode(HttpStatus status, String message) {
         if (status == HttpStatus.UNAUTHORIZED) {
             return "invalid_credentials";

@@ -48,8 +48,7 @@ public class ChatServiceImpl implements ChatService {
         this.moderationService = moderationService;
     }
 
-    // ================= ASK =================
-
+    // Sends a user question to OpenAI, applies moderation, saves messages, and returns the assistant's reply
     @Override
     public String ask(String accessToken, String question) {
         try {
@@ -99,8 +98,7 @@ public class ChatServiceImpl implements ChatService {
         }
     }
 
-    // ================= SAVE MESSAGES =================
-
+    // Saves a chat message (user or assistant) to the database
     @Override
     public void saveMessages(String accessToken, String message, String role) {
         try {
@@ -118,8 +116,7 @@ public class ChatServiceImpl implements ChatService {
         }
     }
 
-    // ================= FETCH HISTORY =================
-
+    // Retrieves the chat history for a given user in chronological order
     @Override
     public List<ChatbotMessageDTO> getMessageHistory(String accessToken, String userId) {
         try {
@@ -136,8 +133,7 @@ public class ChatServiceImpl implements ChatService {
         }
     }
 
-    // ================= DELETE HISTORY =================
-
+    // Deletes all chat history for a given user
     @Override
     public void deleteMessageHistory(String accessToken, String userId) {
         try {
