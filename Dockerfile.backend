@@ -7,6 +7,8 @@ COPY mvnw mvnw.cmd pom.xml ./
 COPY .mvn .mvn
 RUN chmod +x mvnw
 
+RUN chmod +x mvnw && sed -i 's/\r$//' mvnw
+
 # Download dependencies
 RUN ./mvnw -B -q -DskipTests \
     org.apache.maven.plugins:maven-dependency-plugin:3.6.1:resolve \
