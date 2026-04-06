@@ -1,7 +1,7 @@
 package com.rotiprata.api;
 
-public class AddedTestFile {
-    public AddedTestFile() {
+public class TryAgainTestFile {
+    public TryAgainTestFile() {
         System.out.println("CI is working!");
     }
 }
