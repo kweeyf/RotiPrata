@@ -34,7 +34,7 @@ RUN apt-get update \
 ENV SPRING_PROFILES_ACTIVE=prod
 
 # Copy the built jar from the builder stage
-COPY --from=builder /workspace/target/*[0-9].jar app.jar
+COPY --from=builder /workspace/target/*.jar app.jar
 
 # Expose the default Spring Boot port
 EXPOSE 8080
