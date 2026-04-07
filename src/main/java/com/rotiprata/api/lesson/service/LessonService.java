@@ -67,6 +67,17 @@ public class LessonService {
         "match_pairs",
         "short_text"
     );
+    private static final Set<String> LESSON_EMBEDDING_FIELDS = Set.of(
+        "title",
+        "description",
+        "summary",
+        "definition_content",
+        "usage_examples",
+        "origin_content",
+        "lore_content",
+        "evolution_content",
+        "comparison_content"
+    );
 
     private final SupabaseRestClient supabaseRestClient;
     private final SupabaseAdminRestClient supabaseAdminRestClient;
@@ -399,6 +410,10 @@ public class LessonService {
         persistContentSectionsIfProvided(lessonId, lessonPatch.get("content_sections"));
 
         Map<String, Object> refreshedLesson = getAdminLessonById(lessonId);
+        Boolean skipEmbedding = parseBoolean(lessonPatch.get("skip_embedding"));
+        if (!Boolean.TRUE.equals(skipEmbedding)) {
+            patchLessonEmbedding(lessonId, refreshedLesson);
+        }
         return new AdminPublishLessonResponse(
             true,
             null,
@@ -619,36 +634,11 @@ public class LessonService {
         }
 
         Boolean skipEmbedding = parseBoolean(normalizedPayload.get("skip_embedding"));
-        boolean shouldEmbed = !Boolean.TRUE.equals(skipEmbedding);
+        if (publish && !Boolean.TRUE.equals(skipEmbedding)) {
+            patchLessonEmbedding(parseUuid(lesson.get("id")), lesson);
+        }
 
-        if (publish && shouldEmbed) {
-                String textToEmbed = String.join(" ",
-                    Objects.toString(lesson.get("title"), ""),
-                    Objects.toString(lesson.get("description"), ""),
-                    Objects.toString(lesson.get("summary"), ""),
-                    Objects.toString(lesson.get("definition_content"), ""),
-                    Objects.toString(lesson.get("usage_examples"), ""),
-                    Objects.toString(lesson.get("origin_content"), ""),
-                    Objects.toString(lesson.get("lore_content"), ""),
-                    Objects.toString(lesson.get("evolution_content"), ""),
-                    Objects.toString(lesson.get("comparison_content"), "")
-                );
-
-                float[] vector = embeddingService.generateEmbedding(textToEmbed);
-                String vectorString = embeddingService.toPgVector(vector);
-
-                Map<String, Object> update = new HashMap<>();
-                update.put("embedding", vectorString);
-
-                supabaseAdminRestClient.patchList(
-                    "lessons",
-                    "id=eq." + lesson.get("id"),
-                    update,
-                    MAP_LIST
-                );
-            }
-
-            return enrichLessonWithContentSections(lesson);
+        return enrichLessonWithContentSections(lesson);
     }
 
 
@@ -714,43 +704,13 @@ public class LessonService {
         persistContentSectionsIfProvided(lessonId, normalizedPayload.get("content_sections"));
 
         Map<String, Object> updatedLesson = updated.get(0);
-
-        // Fields that affect embeddings
-        List<String> embeddingFields = List.of(
-                "title", "description", "summary", "definition_content",
-                "usage_examples", "origin_content", "lore_content",
-                "evolution_content", "comparison_content"
-        );
-
-        // Only re-embed if published AND at least one embedding field changed
-        boolean shouldReembed = Boolean.TRUE.equals(publishTarget) &&
-                patch.keySet().stream().anyMatch(embeddingFields::contains);
+        Boolean skipEmbedding = parseBoolean(normalizedPayload.get("skip_embedding"));
+        boolean shouldReembed = Boolean.TRUE.equals(publishTarget)
+            && !Boolean.TRUE.equals(skipEmbedding)
+            && hasEmbeddingRelevantChanges(normalizedPayload, patch);
 
         if (shouldReembed) {
-            String textToEmbed = String.join(" ",
-                    Objects.toString(updatedLesson.get("title"), ""),
-                    Objects.toString(updatedLesson.get("description"), ""),
-                    Objects.toString(updatedLesson.get("summary"), ""),
-                    Objects.toString(updatedLesson.get("definition_content"), ""),
-                    Objects.toString(updatedLesson.get("usage_examples"), ""),
-                    Objects.toString(updatedLesson.get("origin_content"), ""),
-                    Objects.toString(updatedLesson.get("lore_content"), ""),
-                    Objects.toString(updatedLesson.get("evolution_content"), ""),
-                    Objects.toString(updatedLesson.get("comparison_content"), "")
-            );
-
-            float[] vector = embeddingService.generateEmbedding(textToEmbed);
-            String vectorString = embeddingService.toPgVector(vector);
-
-            Map<String, Object> embeddingUpdate = new HashMap<>();
-            embeddingUpdate.put("embedding", vectorString);
-
-            supabaseAdminRestClient.patchList(
-                    "lessons",
-                    buildQuery(Map.of("id", "eq." + lessonId)),
-                    embeddingUpdate,
-                    MAP_LIST
-            );
+            patchLessonEmbedding(lessonId, updatedLesson);
         }
 
         return enrichLessonWithContentSections(updatedLesson);
@@ -1673,6 +1633,43 @@ public class LessonService {
             normalized.putAll(deriveLegacyFieldsFromContentSections(normalizedSections));
         }
         return normalized;
+    }
+
+    private boolean hasEmbeddingRelevantChanges(Map<String, Object> normalizedPayload, Map<String, Object> patch) {
+        return patch.keySet().stream().anyMatch(LESSON_EMBEDDING_FIELDS::contains)
+            || normalizedPayload.containsKey("content_sections");
+    }
+
+    private void patchLessonEmbedding(UUID lessonId, Map<String, Object> lesson) {
+        if (lessonId == null || lesson == null) {
+            return;
+        }
+
+        String textToEmbed = String.join(
+            " ",
+            Objects.toString(lesson.get("title"), ""),
+            Objects.toString(lesson.get("description"), ""),
+            Objects.toString(lesson.get("summary"), ""),
+            Objects.toString(lesson.get("definition_content"), ""),
+            Objects.toString(lesson.get("usage_examples"), ""),
+            Objects.toString(lesson.get("origin_content"), ""),
+            Objects.toString(lesson.get("lore_content"), ""),
+            Objects.toString(lesson.get("evolution_content"), ""),
+            Objects.toString(lesson.get("comparison_content"), "")
+        );
+
+        float[] vector = embeddingService.generateEmbedding(textToEmbed);
+        String vectorString = embeddingService.toPgVector(vector);
+
+        Map<String, Object> embeddingUpdate = new HashMap<>();
+        embeddingUpdate.put("embedding", vectorString);
+        supabaseAdminRestClient.patchList(
+            "lessons",
+            buildQuery(Map.of("id", "eq." + lessonId)),
+            embeddingUpdate,
+            MAP_LIST
+        );
+        lesson.put("embedding", vectorString);
     }
 
     private void persistContentSectionsIfProvided(UUID lessonId, Object contentSectionsRaw) {
