@@ -107,7 +107,7 @@ const ContentFeedPage = () => {
         <span className="text-sm text-mainAccent">{contents.length} videos</span>
       </div>
       {error ? (
-        <div className="h-[calc(100dvh-var(--bottom-nav-height)-var(--safe-area-bottom)-3rem)] md:h-[calc(100dvh-4rem-3rem)] flex items-center justify-center">
+        <div className="h-[calc(100dvh-var(--bottom-nav-height)-var(--safe-area-bottom)-3rem)] lg:h-[calc(100dvh-4rem-3rem)] flex items-center justify-center">
           <div className="text-center p-6">
             <h2 className="text-xl font-semibold mb-2">Unable to load content</h2>
             <p className="text-muted-foreground">{error}</p>
@@ -119,7 +119,7 @@ const ContentFeedPage = () => {
           hasMore={false}
           isLoading={isLoading}
           initialIndex={initialIndex}
-          containerClassName="h-[calc(100dvh-var(--bottom-nav-height)-var(--safe-area-bottom)-3rem)] md:h-[calc(100dvh-4rem-3rem)] md:!mt-0"
+          containerClassName="h-[calc(100dvh-var(--bottom-nav-height)-var(--safe-area-bottom)-3rem)] lg:h-[calc(100dvh-4rem-3rem)]"
         />
       )}
     </MainLayout>

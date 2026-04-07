@@ -332,7 +332,7 @@ const ExplorePage = () => {
         <FeedContainer
           contents={viewerContents}
           initialIndex={videoViewerState.index}
-          containerClassName="h-[calc(100dvh-var(--bottom-nav-height)-var(--safe-area-bottom)-3rem)] md:h-[calc(100dvh-4rem-3rem)] md:!mt-0"
+          containerClassName="h-[calc(100dvh-var(--bottom-nav-height)-var(--safe-area-bottom)-3rem)] lg:h-[calc(100dvh-4rem-3rem)]"
         />
       </MainLayout>
     );
