@@ -1,8 +1,8 @@
 services:
   backend:
-    build: 
+    build:
       dockerfile: Dockerfile.backend
-    image: cs203/backend
+    image: cs203/backend:latest
     container_name: backend
     env_file:
       - .env
@@ -10,6 +10,7 @@ services:
       - "${PORT}:8080"
     environment:
       - ALLOWED_ORIGINS=${ALLOWED_ORIGINS}
+    restart: unless-stopped
 
   frontend:
     build:
@@ -17,9 +18,10 @@ services:
       dockerfile: Dockerfile.frontend
       args:
         VITE_API_URL: ${BACKEND_URL}
-    image: cs203/frontend
+    image: cs203/frontend:latest
     container_name: frontend
     ports:
       - "5173:80"
     depends_on:
       - backend
+    restart: unless-stopped
