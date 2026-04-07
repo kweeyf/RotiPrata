@@ -1,4 +1,5 @@
 import { Badge } from "@/components/ui/badge";
+import { cn } from "@/lib/utils";
 
 interface CompactVideoTileProps {
   title: string;
@@ -7,6 +8,7 @@ interface CompactVideoTileProps {
   mediaUrl?: string | null;
   badgeLabel?: string;
   onClick?: () => void;
+  className?: string;
 }
 
 export function CompactVideoTile({
@@ -16,11 +18,16 @@ export function CompactVideoTile({
   mediaUrl,
   badgeLabel = "Video",
   onClick,
+  className,
 }: CompactVideoTileProps) {
   const previewUrl = thumbnailUrl ?? mediaUrl ?? null;
 
   return (
-    <button type="button" className="group w-full max-w-none text-left sm:max-w-[9.5rem]" onClick={onClick}>
+    <button
+      type="button"
+      className={cn("group w-full max-w-[11.5rem] justify-self-center text-left", className)}
+      onClick={onClick}
+    >
       <div className="relative aspect-[9/16] overflow-hidden rounded-2xl bg-mainDark border border-mainAlt/70">
         {previewUrl ? (
           <img

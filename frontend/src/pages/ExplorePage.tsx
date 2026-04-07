@@ -32,6 +32,8 @@ type SearchResultItem = {
 };
 
 const ExplorePage = () => {
+  const responsiveShelfGridClass =
+    'grid grid-cols-[repeat(auto-fit,minmax(9.5rem,1fr))] gap-3 sm:grid-cols-[repeat(auto-fit,minmax(10rem,1fr))] sm:gap-4 lg:grid-cols-[repeat(auto-fit,minmax(10.75rem,1fr))]';
   const [searchQuery, setSearchQuery] = useState('');
   const [debouncedQuery, setDebouncedQuery] = useState('');
   const [searchTab, setSearchTab] = useState<'videos' | 'lessons'>('videos');
@@ -436,7 +438,7 @@ const ExplorePage = () => {
                     </CardContent>
                   </Card>
                 ) : (
-                  <div className="grid grid-cols-2 gap-3 sm:gap-4">
+                  <div className={responsiveShelfGridClass}>
                     {videoResults.map((result, index) => (
                       <CompactVideoTile
                         key={`video-${result.id}`}
@@ -500,7 +502,7 @@ const ExplorePage = () => {
                   </CardContent>
                 </Card>
               ) : (
-                <div className="grid grid-cols-2 gap-3 sm:gap-4">
+                <div className={responsiveShelfGridClass}>
                   {recommendedContents.map((content, index) => (
                     <CompactVideoTile
                       key={`recommended-${content.id}`}
