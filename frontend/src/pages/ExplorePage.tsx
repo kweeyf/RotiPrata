@@ -313,7 +313,7 @@ const ExplorePage = () => {
   if (videoViewerState !== null) {
     return (
       <MainLayout fullScreen>
-        <div className="sticky top-0 z-30 h-12 flex items-center justify-between gap-2 px-4 border-b border-mainAlt bg-main dark:bg-mainDark">
+        <div className="absolute top-15 w-full z-30 h-12 flex items-center justify-between gap-2 px-4 border-b border-mainAlt bg-main dark:bg-mainDark">
           <Button
             variant="ghost"
             onClick={() => setVideoViewerState(null)}
@@ -327,7 +327,7 @@ const ExplorePage = () => {
           <FeedContainer
             contents={viewerContents}
             initialIndex={videoViewerState.index}
-           containerClassName="h-[calc(100dvh-3rem-9rem)] md:pt-12 md:h-[100dvh]"
+            containerClassName=""
           />
       </MainLayout>
     );
