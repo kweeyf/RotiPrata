@@ -18,12 +18,17 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import org.springframework.http.HttpStatus;
+import org.springframework.web.server.ResponseStatusException;
+
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -70,9 +75,9 @@ class LessonServiceTest {
         quizId = UUID.randomUUID();
         categoryId = UUID.randomUUID();
 
-        when(supabaseAdminRestClient.getList(eq("user_roles"), anyString(), any()))
+        lenient().when(supabaseAdminRestClient.getList(eq("user_roles"), anyString(), any()))
             .thenReturn(List.of(Map.of("id", UUID.randomUUID().toString())));
-        when(supabaseAdminRestClient.getList(eq("lesson_section_blocks"), anyString(), any()))
+        lenient().when(supabaseAdminRestClient.getList(eq("lesson_section_blocks"), anyString(), any()))
             .thenReturn(List.of());
     }
 
@@ -381,6 +386,212 @@ class LessonServiceTest {
         // verify
         verifyNoInteractions(embeddingService);
         verify(supabaseAdminRestClient, times(1)).patchList(eq("lessons"), anyString(), any(), any());
+    }
+
+    @Test
+    void findRelevantLesson_ShouldConcatenateTopKLessonContent_WhenQueryProvided() {
+        // Test that top K lesson content is concatenated into a single string
+        //arrange
+        when(embeddingService.generateEmbedding("What is roti prata?")).thenReturn(new float[] {0.5f, 0.5f});
+        when(embeddingService.toPgVector(any(float[].class))).thenReturn("[0.5,0.5]");
+        when(supabaseRestClient.rpcList(eq("top_k_lessons"), any(), eq(ACCESS_TOKEN), any()))
+            .thenReturn(List.of(
+                Map.of("title", "Roti", "description", "Layered flatbread"),
+                Map.of("title", "Prata", "summary", "Crispy and flaky")
+            ));
+
+        //act
+        String result = lessonService.findRelevantLesson(ACCESS_TOKEN, "What is roti prata?");
+
+        //assert
+        assertTrue(result.contains("Roti Layered flatbread"));
+        assertTrue(result.contains("Prata"));
+    }
+
+    @Test
+    void getLessonFeed_ShouldApplyDefaultsAndTrimToPageSize_WhenNoRequestProvided() {
+        // Test that getLessonFeed applies default pagination and trims results to page size
+        //arrange
+        when(supabaseRestClient.getList(eq("lessons"), anyString(), eq(ACCESS_TOKEN), any()))
+            .thenReturn(List.of(
+                Map.of("id", UUID.randomUUID().toString()),
+                Map.of("id", UUID.randomUUID().toString()),
+                Map.of("id", UUID.randomUUID().toString()),
+                Map.of("id", UUID.randomUUID().toString()),
+                Map.of("id", UUID.randomUUID().toString()),
+                Map.of("id", UUID.randomUUID().toString()),
+                Map.of("id", UUID.randomUUID().toString()),
+                Map.of("id", UUID.randomUUID().toString()),
+                Map.of("id", UUID.randomUUID().toString()),
+                Map.of("id", UUID.randomUUID().toString()),
+                Map.of("id", UUID.randomUUID().toString()),
+                Map.of("id", UUID.randomUUID().toString()),
+                Map.of("id", UUID.randomUUID().toString())
+            ));
+        ArgumentCaptor<String> queryCaptor = ArgumentCaptor.forClass(String.class);
+
+        //act
+        var response = lessonService.getLessonFeed(ACCESS_TOKEN, null);
+
+        //assert
+        assertEquals(12, response.items().size());
+        assertTrue(response.hasMore());
+        assertEquals(1, response.page());
+        assertEquals(12, response.pageSize());
+
+        //verify
+        verify(supabaseRestClient).getList(eq("lessons"), queryCaptor.capture(), eq(ACCESS_TOKEN), any());
+        String query = queryCaptor.getValue();
+        assertTrue(query.contains("limit=13"));
+        assertTrue(query.contains("offset=0"));
+        assertTrue(query.contains("order=completion_count.desc,created_at.desc"));
+    }
+
+    @Test
+    void getLessonFeed_ShouldApplyAllFiltersAndBoundaries_WhenRequestHasFilters() {
+        // Test that getLessonFeed applies filters, boundaries, and ordering based on request
+        //arrange
+        when(supabaseRestClient.getList(eq("lessons"), anyString(), eq(ACCESS_TOKEN), any()))
+            .thenReturn(List.of(Map.of("id", UUID.randomUUID().toString())));
+        ArgumentCaptor<String> queryCaptor = ArgumentCaptor.forClass(String.class);
+
+        //act
+        lessonService.getLessonFeed(
+            ACCESS_TOKEN,
+            new com.rotiprata.api.lesson.dto.LessonFeedRequest(
+                "  roti,(prata) ",
+                "advanced",
+                "medium",
+                "highest_xp",
+                0,
+                200
+            )
+        );
+
+        //verify
+        verify(supabaseRestClient).getList(eq("lessons"), queryCaptor.capture(), eq(ACCESS_TOKEN), any());
+        String query = queryCaptor.getValue();
+        assertTrue(query.contains("difficulty_level=eq.3"));
+        assertTrue(query.contains("and=(estimated_minutes.gte.11,estimated_minutes.lte.20)"));
+        assertTrue(query.contains("order=xp_reward.desc"));
+        assertTrue(query.contains("limit=51"));
+        assertTrue(query.contains("offset=0"));
+        assertTrue(query.contains("title.ilike.*roti"));
+        assertTrue(query.contains("prata"));
+    }
+
+    @Test
+    void getLessonFeed_ShouldRejectInvalidFilters_WhenFiltersInvalid() {
+        // Test that getLessonFeed throws BAD_REQUEST for invalid difficulty, duration, or sort
+        //act + assert
+        ResponseStatusException invalidDifficulty = assertThrows(
+            ResponseStatusException.class,
+            () -> lessonService.getLessonFeed(
+                ACCESS_TOKEN,
+                new com.rotiprata.api.lesson.dto.LessonFeedRequest(
+                    null,
+                    "expert",
+                    "all",
+                    "popular",
+                    1,
+                    12
+                )
+            )
+        );
+        assertEquals(HttpStatus.BAD_REQUEST, invalidDifficulty.getStatusCode());
+
+        ResponseStatusException invalidDuration = assertThrows(
+            ResponseStatusException.class,
+            () -> lessonService.getLessonFeed(
+                ACCESS_TOKEN,
+                new com.rotiprata.api.lesson.dto.LessonFeedRequest(
+                    null,
+                    "all",
+                    "very-long",
+                    "popular",
+                    1,
+                    12
+                )
+            )
+        );
+        assertEquals(HttpStatus.BAD_REQUEST, invalidDuration.getStatusCode());
+
+        ResponseStatusException invalidSort = assertThrows(
+            ResponseStatusException.class,
+            () -> lessonService.getLessonFeed(
+                ACCESS_TOKEN,
+                new com.rotiprata.api.lesson.dto.LessonFeedRequest(
+                    null,
+                    "all",
+                    "all",
+                    "random",
+                    1,
+                    12
+                )
+            )
+        );
+        assertEquals(HttpStatus.BAD_REQUEST, invalidSort.getStatusCode());
+    }
+
+    @Test
+    void searchLessons_ShouldReturnAllLessons_WhenQueryIsBlank() {
+        // Test that searchLessons returns all lessons if query is blank
+        //arrange
+        when(supabaseRestClient.getList(eq("lessons"), anyString(), eq(ACCESS_TOKEN), any()))
+            .thenReturn(List.of(Map.of("id", lessonId.toString())));
+
+        //act
+        List<Map<String, Object>> results = lessonService.searchLessons("   ", ACCESS_TOKEN);
+
+        //assert
+        assertEquals(1, results.size());
+
+        //verify
+        verify(supabaseRestClient).getList(eq("lessons"), anyString(), eq(ACCESS_TOKEN), any());
+    }
+
+    @Test
+    void searchLessons_ShouldEscapeUnsafeCharacters_WhenQueryHasSpecialChars() {
+        // Test that searchLessons escapes unsafe characters like parentheses
+        //arrange
+        when(supabaseRestClient.getList(eq("lessons"), anyString(), eq(ACCESS_TOKEN), any()))
+            .thenReturn(List.of(Map.of("id", lessonId.toString())));
+        ArgumentCaptor<String> queryCaptor = ArgumentCaptor.forClass(String.class);
+
+        //act
+        lessonService.searchLessons("roti,(prata)", ACCESS_TOKEN);
+
+        //verify
+        verify(supabaseRestClient).getList(eq("lessons"), queryCaptor.capture(), eq(ACCESS_TOKEN), any());
+        assertTrue(queryCaptor.getValue().contains("title.ilike.*roti"));
+        assertTrue(queryCaptor.getValue().contains("prata"));
+    }
+
+    @Test
+    void getLessonById_ShouldThrowNotFound_WhenMissing() {
+        // Test that getLessonById throws NOT_FOUND if lesson does not exist
+        //arrange
+        when(supabaseRestClient.getList(eq("lessons"), anyString(), eq(ACCESS_TOKEN), any()))
+            .thenReturn(List.of());
+
+        //act + assert
+        ResponseStatusException ex = assertThrows(
+            ResponseStatusException.class,
+            () -> lessonService.getLessonById(lessonId, ACCESS_TOKEN)
+        );
+
+        assertEquals(HttpStatus.NOT_FOUND, ex.getStatusCode());
+    }
+
+    @Test
+    void getLessons_ShouldRequireAccessToken_WhenMissing() {
+        // Test that getLessons throws UNAUTHORIZED if access token is missing
+        //act + assert
+        ResponseStatusException ex = assertThrows(
+            ResponseStatusException.class,
+            () -> lessonService.getLessons(" ")
+        );
+        assertEquals(HttpStatus.UNAUTHORIZED, ex.getStatusCode());
     }
 
     private Map<String, Object> createLessonPayload(boolean publish) {

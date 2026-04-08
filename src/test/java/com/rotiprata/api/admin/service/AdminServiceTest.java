@@ -124,6 +124,41 @@ class AdminServiceTest {
         verify(contentCreatorEnrichmentService, times(1)).enrichWithCreatorProfiles(any());
         verify(supabaseAdminRestClient, times(1)).getList(eq("content_flags"), anyString(), any());
     }
+    
+    // Verifies bad request is returned when year is provided without month.
+    @Test
+    void getFlagReviewByContent_ShouldThrowBadRequest_WhenOnlyYearIsProvided() {
+        // act
+        ResponseStatusException thrown = assertThrows(
+            ResponseStatusException.class,
+            () -> adminService.getFlagReviewByContent(adminUserId, contentId, null, 2026, "token")
+        );
+
+        // assert
+        assertEquals(400, thrown.getStatusCode().value());
+        assertTrue(thrown.getReason().contains("Month and year are required together"));
+
+        // verify
+        verify(supabaseAdminRestClient, never()).getList(eq("content_flags"), anyString(), any());
+    }
+
+    // Verifies bad request is returned when the provided month is below range.
+    @Test
+    void getFlagReviewByContent_ShouldThrowBadRequest_WhenMonthIsBelowRange() {
+        // act
+        ResponseStatusException thrown = assertThrows(
+            ResponseStatusException.class,
+            () -> adminService.getFlagReviewByContent(adminUserId, contentId, 0, 2026, "token")
+        );
+
+        // assert
+        assertEquals(400, thrown.getStatusCode().value());
+        assertTrue(thrown.getReason().contains("Month must be between 1 and 12"));
+
+        // verify
+        verify(supabaseAdminRestClient, never()).getList(eq("content_flags"), anyString(), any());
+    }
+
 
     // Verifies review is read-only when selected period has only resolved reports.
     @Test
@@ -302,6 +337,62 @@ class AdminServiceTest {
 
         // verify
         verify(supabaseAdminRestClient, never()).getList(eq("content_flags"), anyString(), any());
+    }
+
+        // Verifies pending rows with malformed id do not become actionable actions.
+    @Test
+    void getFlagReviewByContent_ShouldNotSetActionableId_WhenPendingIdIsMalformed() {
+        // arrange
+        when(supabaseAdminRestClient.getList(eq("content_flags"), anyString(), any())).thenReturn(List.of(
+            Map.of(
+                "id", "not-a-uuid",
+                "content_id", contentId.toString(),
+                "status", "pending",
+                "reported_by", UUID.randomUUID().toString(),
+                "reason", "Spam",
+                "description", "Needs review",
+                "created_at", "2026-04-10T12:00:00Z",
+                "content", Map.of("id", contentId.toString(), "title", "Roti")
+            )
+        ));
+
+        // act
+        Map<String, Object> review =
+            adminService.getFlagReviewByContent(adminUserId, contentId, 4, 2026, "token");
+
+        // assert
+        assertEquals("pending", review.get("status"));
+        assertNull(review.get("actionableFlagId"));
+        assertFalse((Boolean) review.get("canResolve"));
+        assertFalse((Boolean) review.get("canTakeDown"));
+    }
+
+    // Verifies rows with invalid created_at are excluded from month/year filtering.
+    @Test
+    void getFlagReviewByContent_ShouldThrowNotFound_WhenCreatedAtCannotBeParsed() {
+        // arrange
+        when(supabaseAdminRestClient.getList(eq("content_flags"), anyString(), any())).thenReturn(List.of(
+            Map.of(
+                "id", UUID.randomUUID().toString(),
+                "content_id", contentId.toString(),
+                "status", "pending",
+                "reported_by", UUID.randomUUID().toString(),
+                "reason", "Spam",
+                "description", "Broken timestamp",
+                "created_at", "invalid-date",
+                "content", Map.of("id", contentId.toString(), "title", "Roti")
+            )
+        ));
+
+        // act
+        ResponseStatusException thrown = assertThrows(
+            ResponseStatusException.class,
+            () -> adminService.getFlagReviewByContent(adminUserId, contentId, 4, 2026, "token")
+        );
+
+        // assert
+        assertEquals(404, thrown.getStatusCode().value());
+        assertTrue(thrown.getReason().contains("Flag review not found"));
     }
 
     // Verifies non-admin users cannot access review endpoints.
