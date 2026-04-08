@@ -43,9 +43,12 @@ Set `FRONTEND_URL` to the public frontend base URL so auth emails can redirect b
 Optionally set `SUPABASE_REST_URL` to override the default `SUPABASE_URL/rest/v1`.
 Set `SUPABASE_SERVICE_ROLE_KEY` for admin lookups used to detect duplicate emails.
 **Do not leak or expose this key** (keep it server-side only and never commit it to the repo).
+Set `ALLOWED_ORIGINS` only when the frontend is on a different origin; same-origin Docker deployments can leave it unset.
 
 ## Media tooling (required for video processing)
 The backend requires `ffmpeg`, `ffprobe`, and `yt-dlp`. Startup will fail if they are missing.
+For native-host development, you can optionally override `FFMPEG_PATH`, `FFPROBE_PATH`, and `YTDLP_PATH` in `.env`.
+Do not set those path overrides for Ubuntu Docker deployments; the container uses Linux-native binaries from `PATH`.
 
 Install scripts:
 - macOS / Linux: `scripts/install-media-tools.sh`
@@ -77,6 +80,10 @@ mvn spring-boot:run
 ```
 
 The backend runs on `http://localhost:8080` by default.
+
+## Docker deployment
+`docker-compose.yml` assumes the frontend is served by nginx on the same origin and proxies API requests to `/api`.
+The backend service explicitly uses Linux-native media tooling (`ffmpeg`, `ffprobe`, `yt-dlp`) so developer `.env` files with Windows paths do not leak into Ubuntu containers.
 
 ## Recommendation coverage
 Run the backend recommendation-only test suite with JaCoCo reporting:
