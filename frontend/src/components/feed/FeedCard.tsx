@@ -117,12 +117,6 @@ export function FeedCard({
     };
   }, []);
 
-  useEffect(() => {
-    if (!isActive || content.content_type !== 'video') {
-      setIsBuffering(false);
-    }
-  }, [content.content_type, isActive]);
-
   const addFloatingHearts = (x: number, y: number) => {
     const hearts = Array.from({ length: 6 }, (_, index) => ({
       id: Date.now() + index,
@@ -272,7 +266,7 @@ export function FeedCard({
             shouldAutoplay={shouldAutoplay}
             onPlaybackBlocked={onPlaybackBlocked}
             onPlaybackStarted={onPlaybackStarted}
-            onBufferingChange={setIsBuffering}
+            onBufferingChange={(nextIsBuffering) => setIsBuffering(nextIsBuffering)}
             onPlaybackMetrics={onPlaybackMetrics}
           />
         );
