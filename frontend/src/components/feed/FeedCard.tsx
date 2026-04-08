@@ -175,7 +175,20 @@ export function FeedCard({
     handleDoubleTapLike(event.clientX, event.clientY);
   };
 
+  // Stop the bottom sheet from letting any touch bubble up to the card handlers
+  const handleSheetTouchStart = (event: React.TouchEvent<HTMLDivElement>) => {
+    event.stopPropagation();
+  };
+  const handleSheetTouchEnd = (event: React.TouchEvent<HTMLDivElement>) => {
+    event.stopPropagation();
+  };
+
   const handleCardTouchStart = (event: React.TouchEvent<HTMLDivElement>) => {
+    // If the sheet is open, swallow all card-level touch starts
+    if (isMoreMenuOpen) {
+      event.stopPropagation();
+      return;
+    }
     if (isInteractiveGestureTarget(event.target)) { touchStartRef.current = null; return; }
     const touch = event.touches[0];
     if (!touch) { touchStartRef.current = null; return; }
@@ -183,6 +196,12 @@ export function FeedCard({
   };
 
   const handleCardTouchEnd = (event: React.TouchEvent<HTMLDivElement>) => {
+    // If the sheet is open, swallow all card-level touch ends
+    if (isMoreMenuOpen) {
+      event.stopPropagation();
+      return;
+    }
+
     const touch = event.changedTouches[0];
     if (!touch) return;
 
@@ -211,8 +230,6 @@ export function FeedCard({
         return;
       }
     }
-
-    if (isMoreMenuOpen) { setIsMoreMenuOpen(false); return; }
 
     onMediaInteraction?.();
     const now = Date.now();
@@ -368,14 +385,13 @@ export function FeedCard({
         </div>
       </div>
 
-      {/* Right-side action buttons — always just 4 items max, never overflows */}
+      {/* Right-side action buttons */}
       <div className="absolute right-3 bottom-6 flex flex-col items-center gap-3">
 
         {/* More */}
         {hasMoreItems && (
           <button
             onClick={() => setIsMoreMenuOpen(true)}
-            data-feed-gesture-exempt="true"
             aria-label="More options"
             className="flex flex-col items-center gap-0.5 text-white/80 hover:text-white touch-target"
           >
@@ -427,9 +443,13 @@ export function FeedCard({
       {isMoreMenuOpen && (
         <div
           className="absolute inset-0 z-50 flex flex-col justify-end"
-          data-feed-gesture-exempt="true"
+          // Block ALL touch events from reaching the card handlers
+          onTouchStart={handleSheetTouchStart}
+          onTouchEnd={handleSheetTouchEnd}
+          onTouchCancel={(e) => e.stopPropagation()}
+          onTouchMove={(e) => e.stopPropagation()}
         >
-          {/* Backdrop */}
+          {/* Backdrop — tap to close */}
           <div
             className="bottom-sheet-backdrop absolute inset-0 bg-black/50"
             onClick={() => setIsMoreMenuOpen(false)}
@@ -512,7 +532,6 @@ export function FeedCard({
 
               {showTakeDown && onTakeDown && (
                 <>
-                  {/* Separator before destructive action */}
                   <div className="mx-5 my-1 h-px bg-white/10" />
                   <button
                     onClick={() => { if (!isTakingDown) { setIsMoreMenuOpen(false); onTakeDown(); } }}
@@ -529,7 +548,7 @@ export function FeedCard({
             </div>
 
             {/* Safe area spacer */}
-            <div className="h-safe-bottom pb-6" />
+            <div className="pb-6" />
           </div>
         </div>
       )}

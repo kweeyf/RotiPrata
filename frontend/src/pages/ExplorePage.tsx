@@ -324,11 +324,11 @@ const ExplorePage = () => {
           </Button>
           <span className="text-sm text-mainAccent">{viewerCountLabel}</span>
         </div>
-        <FeedContainer
-          contents={viewerContents}
-          initialIndex={videoViewerState.index}
-          containerClassName="h-[calc(100dvh-var(--bottom-nav-height)-var(--safe-area-bottom)-3rem)] lg:h-[calc(100dvh-4rem-3rem)]"
-        />
+          <FeedContainer
+            contents={viewerContents}
+            initialIndex={videoViewerState.index}
+           containerClassName="h-[calc(100dvh-3rem-9rem)] md:pt-12 md:h-[100dvh]"
+          />
       </MainLayout>
     );
   }
