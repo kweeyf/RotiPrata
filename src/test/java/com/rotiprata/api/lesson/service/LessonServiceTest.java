@@ -449,7 +449,7 @@ class LessonServiceTest {
 
     @Test
     void getLessonFeed_ShouldApplyAllFiltersAndBoundaries_WhenRequestHasFilters() {
-        // Test that getLessonFeed applies filters, boundaries, and ordering based on request
+        // Test that getLessonFeed applies difficulty, duration, ordering, and title filters
         //arrange
         when(supabaseRestClient.getList(eq("lessons"), anyString(), eq(ACCESS_TOKEN), any()))
             .thenReturn(List.of(Map.of("id", UUID.randomUUID().toString())));
@@ -477,7 +477,7 @@ class LessonServiceTest {
         assertTrue(query.contains("limit=51"));
         assertTrue(query.contains("offset=0"));
         assertTrue(query.contains("title.ilike.*roti"));
-        assertTrue(query.contains("prata"));
+        assertTrue(query.contains("prata")); // relaxed to avoid wildcard/escape mismatch
     }
 
     @Test
@@ -564,7 +564,7 @@ class LessonServiceTest {
         //verify
         verify(supabaseRestClient).getList(eq("lessons"), queryCaptor.capture(), eq(ACCESS_TOKEN), any());
         assertTrue(queryCaptor.getValue().contains("title.ilike.*roti"));
-        assertTrue(queryCaptor.getValue().contains("prata"));
+        assertTrue(queryCaptor.getValue().contains("prata")); // relaxed assertion
     }
 
     @Test
@@ -592,6 +592,88 @@ class LessonServiceTest {
             () -> lessonService.getLessons(" ")
         );
         assertEquals(HttpStatus.UNAUTHORIZED, ex.getStatusCode());
+    }
+
+    @Test
+    void getUserLessonProgress_ShouldKeepHighestProgressPerLesson_WhenMultipleRecordsExist() {
+        // Test that getUserLessonProgress keeps the highest progress for duplicate lessons
+        //arrange
+        when(supabaseRestClient.getList(eq("user_lesson_progress"), anyString(), eq(ACCESS_TOKEN), any()))
+            .thenReturn(List.of(
+                Map.of("lesson_id", lessonId.toString(), "progress_percentage", 20),
+                Map.of("lesson_id", lessonId.toString(), "progress_percentage", 80),
+                Map.of("lesson_id", UUID.randomUUID().toString(), "progress_percentage", 50),
+                Map.of("progress_percentage", 99)
+            ));
+
+        //act
+        Map<String, Integer> progress = lessonService.getUserLessonProgress(adminUserId, ACCESS_TOKEN);
+
+        //assert
+        assertEquals(2, progress.size());
+        assertEquals(80, progress.get(lessonId.toString()));
+    }
+
+    @Test
+    void getUserStats_ShouldComputeCountsAndDefaultStreak_WhenDataPresent() {
+        // Test that getUserStats computes lessons, concepts, streak, and hours correctly
+        //arrange
+        when(supabaseRestClient.getList(eq("user_lesson_progress"), anyString(), eq(ACCESS_TOKEN), any()))
+            .thenReturn(List.of(
+                Map.of("progress_percentage", 100, "status", "completed"),
+                Map.of("progress_percentage", 100, "status", "in_progress"),
+                Map.of("progress_percentage", 40, "status", "in_progress")
+            ));
+        when(supabaseRestClient.getList(eq("user_concepts_mastered"), anyString(), eq(ACCESS_TOKEN), any()))
+            .thenReturn(List.of(Map.of("id", UUID.randomUUID().toString()), Map.of("id", UUID.randomUUID().toString())));
+        when(supabaseRestClient.getList(eq("profiles"), anyString(), eq(ACCESS_TOKEN), any()))
+            .thenReturn(List.of(Map.of("current_streak", "7")));
+
+        //act
+        Map<String, Integer> stats = lessonService.getUserStats(adminUserId, ACCESS_TOKEN);
+
+        //assert
+        assertEquals(3, stats.get("lessonsEnrolled"));
+        assertEquals(2, stats.get("lessonsCompleted"));
+        assertEquals(2, stats.get("conceptsMastered"));
+        assertEquals(7, stats.get("currentStreak"));
+        assertEquals(0, stats.get("hoursLearned"));
+    }
+
+    @Test
+    void saveLesson_ShouldIgnoreUniqueViolation_WhenConflictOccurs() {
+        // Test that saveLesson ignores unique constraint violations
+        //arrange
+        Map<String, Object> lesson = completeLesson(true);
+        when(supabaseRestClient.getList(eq("lessons"), anyString(), eq(ACCESS_TOKEN), any()))
+            .thenReturn(List.of(lesson));
+        when(supabaseRestClient.postList(eq("saved_content"), any(), eq(ACCESS_TOKEN), any()))
+            .thenThrow(new ResponseStatusException(HttpStatus.CONFLICT, "duplicate key value violates unique constraint"));
+
+        //act
+        lessonService.saveLesson(adminUserId, lessonId, ACCESS_TOKEN);
+
+        //verify
+        verify(supabaseRestClient).postList(eq("saved_content"), any(), eq(ACCESS_TOKEN), any());
+    }
+
+    @Test
+    void saveLesson_ShouldRethrowNonUniqueViolation_WhenOtherErrorOccurs() {
+        // Test that saveLesson rethrows exceptions other than unique constraint violations
+        //arrange
+        Map<String, Object> lesson = completeLesson(true);
+        when(supabaseRestClient.getList(eq("lessons"), anyString(), eq(ACCESS_TOKEN), any()))
+            .thenReturn(List.of(lesson));
+        when(supabaseRestClient.postList(eq("saved_content"), any(), eq(ACCESS_TOKEN), any()))
+            .thenThrow(new ResponseStatusException(HttpStatus.BAD_REQUEST, "invalid payload"));
+
+        //act + assert
+        ResponseStatusException ex = assertThrows(
+            ResponseStatusException.class,
+            () -> lessonService.saveLesson(adminUserId, lessonId, ACCESS_TOKEN)
+        );
+
+        assertEquals(HttpStatus.BAD_REQUEST, ex.getStatusCode());
     }
 
     private Map<String, Object> createLessonPayload(boolean publish) {
