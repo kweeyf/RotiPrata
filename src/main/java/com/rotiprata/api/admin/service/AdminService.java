@@ -1469,8 +1469,7 @@ public class AdminService {
         if (value == null) {
             return null;
         }
-        String cleaned = value.replaceAll("[\\x00-\\x1F\\x7F]", "");
-        String collapsed = cleaned.replaceAll("\\s+", " ").trim();
+        String collapsed = value.replaceAll("\\s+", " ").trim();
         if (maxLength > 0 && collapsed.length() > maxLength) {
             return collapsed.substring(0, maxLength);
         }
