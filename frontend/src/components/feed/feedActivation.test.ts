@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
   ACTIVE_VISIBILITY_THRESHOLD,
   chooseActiveFeedIndex,
+  shouldPauseFeedForNoActiveCard,
   VIEW_TRACKING_THRESHOLD,
 } from './feedActivation';
 
@@ -28,5 +29,17 @@ describe('feed activation thresholds', () => {
 
   it('view tracking threshold stays at 60%', () => {
     expect(VIEW_TRACKING_THRESHOLD).toBe(0.6);
+  });
+
+  it('does not pause all media during unresolved startup when no card has qualified yet', () => {
+    expect(shouldPauseFeedForNoActiveCard(-1, 0, false)).toBe(false);
+  });
+
+  it('pauses all media once startup is resolved and no card remains active', () => {
+    expect(shouldPauseFeedForNoActiveCard(-1, 0, true)).toBe(true);
+  });
+
+  it('does not re-pause when feed is already in the paused state', () => {
+    expect(shouldPauseFeedForNoActiveCard(-1, -1, true)).toBe(false);
   });
 });
