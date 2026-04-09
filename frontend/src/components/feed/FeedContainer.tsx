@@ -25,6 +25,7 @@ import {
   ACTIVE_VISIBILITY_THRESHOLD,
   VIEW_TRACKING_THRESHOLD,
   chooseActiveFeedIndex,
+  shouldPauseFeedForNoActiveCard,
 } from './feedActivation';
 import { toast } from '@/components/ui/sonner';
 import { Button } from '@/components/ui/button';
@@ -127,6 +128,7 @@ export function FeedContainer({
   const prefetchLengthRef = useRef<number | null>(null);
   const activeIndexRef = useRef(activeIndex);
   const previousActiveContentIdRef = useRef<string | null>(null);
+  const hasResolvedInitialActivationRef = useRef(false);
   const isAdminUser = isAdmin();
   const currentUserId =
     (user as unknown as { user_id?: string; userId?: string } | null)?.user_id ??
@@ -230,6 +232,13 @@ export function FeedContainer({
   );
 
   useEffect(() => {
+    if (visibleContents.length === 0) {
+      hasResolvedInitialActivationRef.current = false;
+      visibilityRatiosRef.current = {};
+    }
+  }, [visibleContents.length]);
+
+  useEffect(() => {
     const clamped = Math.max(0, Math.min(initialIndex, Math.max(visibleContents.length - 1, 0)));
     setActiveIndex(clamped);
     const container = containerRef.current;
@@ -262,10 +271,17 @@ export function FeedContainer({
         );
 
         if (nextActiveIndex >= 0) {
+          hasResolvedInitialActivationRef.current = true;
           if (nextActiveIndex !== activeIndexRef.current) {
             setActiveIndex(nextActiveIndex);
           }
-        } else if (activeIndexRef.current !== -1) {
+        } else if (
+          shouldPauseFeedForNoActiveCard(
+            nextActiveIndex,
+            activeIndexRef.current,
+            hasResolvedInitialActivationRef.current
+          )
+        ) {
           // No feed card is >= activation visibility threshold (e.g. end-of-feed card), so pause all media.
           setActiveIndex(-1);
         }

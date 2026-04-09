@@ -47,3 +47,9 @@ export const chooseActiveFeedIndex = (
 
   return currentActiveIndex;
 };
+
+export const shouldPauseFeedForNoActiveCard = (
+  nextActiveIndex: number,
+  currentActiveIndex: number,
+  hasResolvedInitialActivation: boolean
+) => nextActiveIndex < 0 && hasResolvedInitialActivation && currentActiveIndex !== -1;
