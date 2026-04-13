@@ -47,13 +47,13 @@ class AdminContentLessonLinkTest {
     @Mock
     private AdminLoggingService adminLoggingService;
 
-    private AdminService adminService;
+    private AdminServiceImpl adminService;
     private UUID adminUserId;
     private UUID contentId;
 
     @BeforeEach
     void setUp() {
-        adminService = new AdminService(
+        adminService = new AdminServiceImpl(
             supabaseAdminClient,
             supabaseAdminRestClient,
             contentCreatorEnrichmentService,

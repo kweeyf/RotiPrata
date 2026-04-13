@@ -29,12 +29,12 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
-import static org.mockito.Mockito.times;
 
 @ExtendWith(MockitoExtension.class)
-class LessonQuizServiceTest {
+class LessonQuizServiceImplTest {
 
     private static final String ACCESS_TOKEN = "token";
 
@@ -44,7 +44,7 @@ class LessonQuizServiceTest {
     @Mock
     private SupabaseAdminRestClient supabaseAdminRestClient;
 
-    private LessonQuizService lessonQuizService;
+    private LessonQuizServiceImpl lessonQuizService;
     private UUID userId;
     private UUID lessonId;
     private String quizId;
@@ -57,7 +57,7 @@ class LessonQuizServiceTest {
 
     @BeforeEach
     void setUp() {
-        lessonQuizService = new LessonQuizService(
+        lessonQuizService = new LessonQuizServiceImpl(
             supabaseRestClient,
             supabaseAdminRestClient,
             new LessonQuizGraderRegistry(List.of(new MultipleChoiceQuestionGrader()))

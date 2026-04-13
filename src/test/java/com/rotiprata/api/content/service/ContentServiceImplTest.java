@@ -39,7 +39,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
-class ContentServiceTest {
+class ContentServiceImplTest {
 
     @Mock
     private SupabaseRestClient supabaseRestClient;
@@ -52,13 +52,13 @@ class ContentServiceTest {
     @Mock
     private UserService userService;
 
-    private ContentService service;
+    private ContentServiceImpl service;
     private UUID userId;
     private UUID contentId;
 
     @BeforeEach
     void setUp() {
-        service = new ContentService(
+        service = new ContentServiceImpl(
             supabaseRestClient,
             supabaseAdminRestClient,
             contentEngagementService,
