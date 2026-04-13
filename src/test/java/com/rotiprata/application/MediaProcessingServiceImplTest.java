@@ -18,7 +18,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @ExtendWith(MockitoExtension.class)
-class MediaProcessingServiceTest {
+class MediaProcessingServiceImplTest {
 
     @Mock
     private SupabaseAdminRestClient adminRestClient;
@@ -27,7 +27,7 @@ class MediaProcessingServiceTest {
     private SupabaseStorageClient storageClient;
 
     private MediaProcessingProperties properties;
-    private MediaProcessingService service;
+    private MediaProcessingServiceImpl service;
 
     @BeforeEach
     void setUp() {
@@ -35,7 +35,7 @@ class MediaProcessingServiceTest {
         properties.setAutoUpdateYtdlp(false);
         properties.setYtdlpPath("yt-dlp");
         TaskExecutor executor = Runnable::run;
-        service = new MediaProcessingService(
+        service = new MediaProcessingServiceImpl(
             properties,
             new SupabaseProperties(),
             adminRestClient,
@@ -48,8 +48,10 @@ class MediaProcessingServiceTest {
     void buildYtDlpDownloadCommand_ShouldOmitFfmpegLocation_WhenUsingBareExecutableName() {
         properties.setFfmpegPath("ffmpeg");
 
+        // act
         List<String> command = service.buildYtDlpDownloadCommand("https://example.com/video", Path.of("download.mp4"));
 
+        // assert
         assertFalse(command.contains("--ffmpeg-location"));
         assertEquals("yt-dlp", command.get(0));
     }
@@ -58,8 +60,10 @@ class MediaProcessingServiceTest {
     void buildYtDlpDownloadCommand_ShouldIncludeFfmpegLocation_WhenUsingAbsoluteLinuxPath() {
         properties.setFfmpegPath("/usr/local/bin/ffmpeg");
 
+        // act
         List<String> command = service.buildYtDlpDownloadCommand("https://example.com/video", Path.of("download.mp4"));
 
+        // assert
         int locationIndex = command.indexOf("--ffmpeg-location");
         assertTrue(locationIndex >= 0);
         assertEquals("/usr/local/bin", command.get(locationIndex + 1));
@@ -69,8 +73,10 @@ class MediaProcessingServiceTest {
     void buildYtDlpDownloadCommand_ShouldIncludeFfmpegLocation_WhenUsingWindowsStylePath() {
         properties.setFfmpegPath("C:\\tools\\ffmpeg.exe");
 
+        // act
         List<String> command = service.buildYtDlpDownloadCommand("https://example.com/video", Path.of("download.mp4"));
 
+        // assert
         int locationIndex = command.indexOf("--ffmpeg-location");
         assertTrue(locationIndex >= 0);
         assertEquals("C:\\tools", command.get(locationIndex + 1));

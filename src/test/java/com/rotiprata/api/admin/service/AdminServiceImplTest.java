@@ -43,7 +43,7 @@ import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 @DisplayName("AdminService getFlagReviewByContent tests")
-class AdminServiceTest {
+class AdminServiceImplTest {
 
     @Mock
     private SupabaseAdminClient supabaseAdminClient;
@@ -63,13 +63,13 @@ class AdminServiceTest {
     @Mock
     private AdminLoggingService adminLoggingService;
 
-    private AdminService adminService;
+    private AdminServiceImpl adminService;
     private UUID adminUserId;
     private UUID contentId;
 
     @BeforeEach
     void setUp() {
-        adminService = new AdminService(
+        adminService = new AdminServiceImpl(
             supabaseAdminClient,
             supabaseAdminRestClient,
             contentCreatorEnrichmentService,
@@ -921,7 +921,7 @@ class AdminServiceTest {
     @SuppressWarnings("unchecked")
     private <T> T invokePrivate(String methodName, Class<?>[] paramTypes, Object... args) {
         try {
-            Method method = AdminService.class.getDeclaredMethod(methodName, paramTypes);
+            Method method = AdminServiceImpl.class.getDeclaredMethod(methodName, paramTypes);
             method.setAccessible(true);
             return (T) method.invoke(adminService, args);
         } catch (InvocationTargetException ex) {

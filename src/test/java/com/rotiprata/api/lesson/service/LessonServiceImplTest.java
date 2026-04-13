@@ -36,7 +36,7 @@ import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
-class LessonServiceTest {
+class LessonServiceImplTest {
 
     private static final String ACCESS_TOKEN = "token";
 
@@ -55,7 +55,7 @@ class LessonServiceTest {
     @Mock
     private MediaProcessingService mediaProcessingService;
 
-    private LessonService lessonService;
+    private LessonServiceImpl lessonService;
     private UUID adminUserId;
     private UUID lessonId;
     private UUID quizId;
@@ -63,7 +63,7 @@ class LessonServiceTest {
 
     @BeforeEach
     void setUp() {
-        lessonService = new LessonService(
+        lessonService = new LessonServiceImpl(
             supabaseRestClient,
             supabaseAdminRestClient,
             lessonQuizService,
