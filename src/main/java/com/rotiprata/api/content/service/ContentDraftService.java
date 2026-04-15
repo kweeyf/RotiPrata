@@ -1,15 +1,15 @@
 package com.rotiprata.api.content.service;
 
 import com.fasterxml.jackson.core.type.TypeReference;
-import com.rotiprata.api.content.domain.Content;
-import com.rotiprata.api.content.domain.ContentMedia;
-import com.rotiprata.api.content.domain.ContentStatus;
-import com.rotiprata.api.content.domain.ContentTag;
-import com.rotiprata.api.content.domain.ContentType;
-import com.rotiprata.api.content.dto.ContentMediaStartResponse;
-import com.rotiprata.api.content.dto.ContentMediaStatusResponse;
-import com.rotiprata.api.content.dto.ContentSubmitRequest;
-import com.rotiprata.api.content.dto.ContentUpdateRequest;
+import com.rotiprata.api.content.model.Content;
+import com.rotiprata.api.content.model.ContentMedia;
+import com.rotiprata.api.content.types.ContentStatus;
+import com.rotiprata.api.content.model.ContentTag;
+import com.rotiprata.api.content.types.ContentType;
+import com.rotiprata.api.content.response.ContentMediaStartResponse;
+import com.rotiprata.api.content.response.ContentMediaStatusResponse;
+import com.rotiprata.api.content.request.ContentSubmitRequest;
+import com.rotiprata.api.content.request.ContentUpdateRequest;
 import com.rotiprata.application.MediaProcessingService;
 import com.rotiprata.infrastructure.supabase.SupabaseAdminRestClient;
 import java.time.OffsetDateTime;

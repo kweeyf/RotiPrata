@@ -1,13 +1,13 @@
 package com.rotiprata.api.content.controller;
 
-import com.rotiprata.api.content.domain.Content;
-import com.rotiprata.api.content.dto.ContentCommentResponse;
-import com.rotiprata.api.content.dto.ContentFlagRequest;
-import com.rotiprata.api.content.dto.ContentMediaStartResponse;
-import com.rotiprata.api.content.dto.ContentMediaStatusResponse;
-import com.rotiprata.api.content.dto.ContentPlaybackEventRequest;
-import com.rotiprata.api.content.dto.ContentQuizResponse;
-import com.rotiprata.api.content.dto.ContentQuizSubmitResponse;
+import com.rotiprata.api.content.model.Content;
+import com.rotiprata.api.content.response.ContentCommentResponse;
+import com.rotiprata.api.content.request.ContentFlagRequest;
+import com.rotiprata.api.content.response.ContentMediaStartResponse;
+import com.rotiprata.api.content.response.ContentMediaStatusResponse;
+import com.rotiprata.api.content.request.ContentPlaybackEventRequest;
+import com.rotiprata.api.content.response.ContentQuizResponse;
+import com.rotiprata.api.content.response.ContentQuizSubmitResponse;
 import com.rotiprata.api.content.service.ContentDraftService;
 import com.rotiprata.api.content.service.ContentQuizService;
 import com.rotiprata.api.content.service.ContentService;
@@ -37,6 +37,9 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.jwt;
 
+/**
+ * Covers content controller scenarios and regression behavior for the current branch changes.
+ */
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.MOCK)
 @AutoConfigureMockMvc
 @DisplayName("ContentController Mock Integration Tests")
@@ -54,25 +57,37 @@ class ContentControllerMockIntegrationTest {
     @MockBean
     private ContentQuizService contentQuizService;
 
+    /**
+     * Builds the shared test fixture and default mock behavior for each scenario.
+     */
     @BeforeEach
     void setUp() {
         RestAssuredMockMvc.mockMvc(mockMvc);
     }
 
+    /**
+     * Handles mocked user id.
+     */
     private UUID mockedUserId() {
         return UUID.fromString("11111111-1111-1111-1111-111111111111");
     }
 
+    /**
+     * Handles random id.
+     */
     private UUID randomId() {
         return UUID.randomUUID();
     }
 
+    /**
+     * Verifies that start upload should return accepted when video file provided.
+     */
     /** Verifies starting a media upload accepts a valid video file. */
     @Test
     void startUpload_ShouldReturnAccepted_WhenVideoFileProvided() {
         //arrange
         UUID contentId = randomId();
-        when(contentDraftService.startUpload(any(), eq(com.rotiprata.api.content.domain.ContentType.VIDEO), any()))
+        when(contentDraftService.startUpload(any(), eq(com.rotiprata.api.content.types.ContentType.VIDEO), any()))
             .thenReturn(new ContentMediaStartResponse(contentId, "processing", "/api/content/" + contentId + "/media"));
 
         //act
@@ -88,14 +103,17 @@ class ContentControllerMockIntegrationTest {
             .body("status", equalTo("processing"));
 
         //verify
-        verify(contentDraftService).startUpload(any(), eq(com.rotiprata.api.content.domain.ContentType.VIDEO), any());
+        verify(contentDraftService).startUpload(any(), eq(com.rotiprata.api.content.types.ContentType.VIDEO), any());
     }
 
+    /**
+     * Verifies that start upload should return accepted when image file provided.
+     */
     /** Verifies starting a media upload accepts a valid image file. */
     @Test
     void startUpload_ShouldReturnAccepted_WhenImageFileProvided() {
         //arrange
-        when(contentDraftService.startUpload(any(), eq(com.rotiprata.api.content.domain.ContentType.IMAGE), any()))
+        when(contentDraftService.startUpload(any(), eq(com.rotiprata.api.content.types.ContentType.IMAGE), any()))
             .thenReturn(new ContentMediaStartResponse(randomId(), "processing", "/api/content/poll"));
 
         //act
@@ -109,9 +127,12 @@ class ContentControllerMockIntegrationTest {
             .status(HttpStatus.ACCEPTED);
 
         //verify
-        verify(contentDraftService).startUpload(any(), eq(com.rotiprata.api.content.domain.ContentType.IMAGE), any());
+        verify(contentDraftService).startUpload(any(), eq(com.rotiprata.api.content.types.ContentType.IMAGE), any());
     }
 
+    /**
+     * Verifies that start upload should return bad request when file is empty.
+     */
     /** Verifies upload is rejected when no file content is supplied. */
     @Test
     void startUpload_ShouldReturnBadRequest_WhenFileIsEmpty() {
@@ -130,6 +151,9 @@ class ContentControllerMockIntegrationTest {
         verify(contentDraftService, org.mockito.Mockito.never()).startUpload(any(), any(), any());
     }
 
+    /**
+     * Verifies that start upload should return bad request when content type missing.
+     */
     /** Verifies upload is rejected when multipart content type is missing. */
     @Test
     void startUpload_ShouldReturnBadRequest_WhenContentTypeMissing() {
@@ -148,6 +172,9 @@ class ContentControllerMockIntegrationTest {
         verify(contentDraftService, org.mockito.Mockito.never()).startUpload(any(), any(), any());
     }
 
+    /**
+     * Verifies that start upload should return bad request when content type unsupported.
+     */
     /** Verifies upload is rejected for unsupported media content types. */
     @Test
     void startUpload_ShouldReturnBadRequest_WhenContentTypeUnsupported() {
@@ -166,6 +193,9 @@ class ContentControllerMockIntegrationTest {
         verify(contentDraftService, org.mockito.Mockito.never()).startUpload(any(), any(), any());
     }
 
+    /**
+     * Verifies that start link should return accepted when request is valid.
+     */
     /** Verifies starting a link-based upload delegates to draft service. */
     @Test
     void startLink_ShouldReturnAccepted_WhenRequestIsValid() {

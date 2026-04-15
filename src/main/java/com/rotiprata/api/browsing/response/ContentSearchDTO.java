@@ -1,4 +1,4 @@
-package com.rotiprata.api.browsing.dto;
+package com.rotiprata.api.browsing.response;
 
 public record ContentSearchDTO(
     String id,

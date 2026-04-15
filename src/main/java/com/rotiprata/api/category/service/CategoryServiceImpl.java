@@ -1,7 +1,7 @@
 package com.rotiprata.api.category.service;
 
 import com.fasterxml.jackson.core.type.TypeReference;
-import com.rotiprata.api.category.domain.Category;
+import com.rotiprata.api.category.model.Category;
 import com.rotiprata.infrastructure.supabase.SupabaseAdminRestClient;
 import java.util.List;
 import org.springframework.stereotype.Service;

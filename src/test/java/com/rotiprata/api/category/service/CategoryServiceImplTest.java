@@ -1,6 +1,6 @@
 package com.rotiprata.api.category.service;
 
-import com.rotiprata.api.category.domain.Category;
+import com.rotiprata.api.category.model.Category;
 import com.rotiprata.infrastructure.supabase.SupabaseAdminRestClient;
 import com.fasterxml.jackson.core.type.TypeReference;
 import org.junit.jupiter.api.BeforeEach;

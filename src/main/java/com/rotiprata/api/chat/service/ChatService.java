@@ -1,6 +1,6 @@
 package com.rotiprata.api.chat.service;
 
-import com.rotiprata.api.chat.dto.ChatbotMessageDTO;
+import com.rotiprata.api.chat.message.ChatbotMessageDTO;
 import com.rotiprata.api.exception.ChatServiceException;
 
 import java.util.List;

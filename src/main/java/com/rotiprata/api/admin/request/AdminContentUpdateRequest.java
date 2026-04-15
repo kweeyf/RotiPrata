@@ -1,4 +1,4 @@
-package com.rotiprata.api.admin.dto;
+package com.rotiprata.api.admin.request;
 
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotEmpty;

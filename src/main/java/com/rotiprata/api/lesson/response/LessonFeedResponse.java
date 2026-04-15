@@ -1,4 +1,4 @@
-package com.rotiprata.api.lesson.dto;
+package com.rotiprata.api.lesson.response;
 
 import java.util.List;
 import java.util.Map;

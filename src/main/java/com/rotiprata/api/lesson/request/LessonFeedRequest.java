@@ -1,4 +1,4 @@
-package com.rotiprata.api.lesson.dto;
+package com.rotiprata.api.lesson.request;
 
 public record LessonFeedRequest(
     String query,

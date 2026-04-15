@@ -1,6 +1,6 @@
-package com.rotiprata.api.admin.dto;
+package com.rotiprata.api.admin.response;
 
-import com.rotiprata.domain.AppRole;
+import com.rotiprata.security.authorization.AppRole;
 import java.time.LocalDate;
 import java.time.OffsetDateTime;
 import java.util.List;

@@ -1,4 +1,4 @@
-package com.rotiprata.api.browsing.dto;
+package com.rotiprata.api.browsing.model;
 
 import java.time.Instant;
 import com.fasterxml.jackson.annotation.JsonProperty;

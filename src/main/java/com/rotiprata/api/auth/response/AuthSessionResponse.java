@@ -1,4 +1,4 @@
-package com.rotiprata.api.auth.dto;
+package com.rotiprata.api.auth.response;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import java.util.UUID;

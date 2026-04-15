@@ -1,4 +1,4 @@
-package com.rotiprata.api.admin.dto;
+package com.rotiprata.api.admin.response;
 
 import java.util.Map;
 import java.util.UUID;

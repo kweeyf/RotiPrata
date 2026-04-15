@@ -6,7 +6,7 @@ import java.util.Map;
 
 import org.springframework.stereotype.Service;
 
-import com.rotiprata.api.chat.dto.ChatbotMessageDTO;
+import com.rotiprata.api.chat.message.ChatbotMessageDTO;
 import com.rotiprata.api.lesson.service.LessonService;
 import com.rotiprata.api.exception.ChatServiceException;
 import com.rotiprata.infrastructure.supabase.SupabaseRestClient;

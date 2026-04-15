@@ -1,4 +1,4 @@
-package com.rotiprata.api.lesson.dto;
+package com.rotiprata.api.lesson.response;
 
 public record LessonSearchDTO(
     String id,

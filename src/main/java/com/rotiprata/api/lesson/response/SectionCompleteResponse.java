@@ -1,5 +1,5 @@
-package com.rotiprata.api.zdto;
+package com.rotiprata.api.lesson.response;
 
-import com.rotiprata.api.lesson.dto.LessonProgressResponse;
+import com.rotiprata.api.lesson.response.LessonProgressResponse;
 
 public record SectionCompleteResponse(LessonProgressResponse progress) {}

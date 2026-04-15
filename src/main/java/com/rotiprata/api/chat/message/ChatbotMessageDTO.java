@@ -1,4 +1,4 @@
-package com.rotiprata.api.chat.dto;
+package com.rotiprata.api.chat.message;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;

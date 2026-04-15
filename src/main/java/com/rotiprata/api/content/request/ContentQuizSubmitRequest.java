@@ -1,4 +1,4 @@
-package com.rotiprata.api.content.dto;
+package com.rotiprata.api.content.request;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import java.util.Map;

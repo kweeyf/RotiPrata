@@ -1,4 +1,6 @@
-package com.rotiprata.api.category.domain;
+package com.rotiprata.api.category.model;
+
+import com.rotiprata.api.category.types.CategoryType;
 
 import java.time.OffsetDateTime;
 import java.util.UUID;

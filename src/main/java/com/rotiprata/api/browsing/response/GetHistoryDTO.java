@@ -1,4 +1,4 @@
-package com.rotiprata.api.browsing.dto;
+package com.rotiprata.api.browsing.response;
 
 import java.time.LocalDateTime;
 

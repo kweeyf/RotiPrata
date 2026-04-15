@@ -1,4 +1,4 @@
-package com.rotiprata.api.content.domain;
+package com.rotiprata.api.content.types;
 
 public enum ContentType {
     VIDEO,

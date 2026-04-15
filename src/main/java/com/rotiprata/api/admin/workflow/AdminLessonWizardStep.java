@@ -1,4 +1,4 @@
-package com.rotiprata.api.admin.dto;
+package com.rotiprata.api.admin.workflow;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.web.server.ResponseStatusException;
