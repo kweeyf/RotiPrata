@@ -1,4 +1,4 @@
-package com.rotiprata.api.admin.response;
+package com.rotiprata.api.admin.dto;
 
 public record AdminStatsResponse(
     int totalUsers,

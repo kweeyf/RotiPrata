@@ -1,4 +1,4 @@
-package com.rotiprata.api.user.request;
+package com.rotiprata.api.user.dto;
 
 import com.fasterxml.jackson.annotation.JsonAlias;
 import com.fasterxml.jackson.annotation.JsonProperty;

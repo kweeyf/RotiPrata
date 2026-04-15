@@ -1,8 +1,8 @@
 package com.rotiprata.api.user.controller;
 
-import com.rotiprata.api.user.request.ThemePreferenceRequest;
-import com.rotiprata.api.user.response.LeaderboardResponse;
-import com.rotiprata.api.user.preference.ThemePreference;
+import com.rotiprata.api.zdto.ThemePreferenceRequest;
+import com.rotiprata.api.zdto.LeaderboardResponse;
+import com.rotiprata.domain.ThemePreference;
 import com.rotiprata.security.SecurityUtils;
 
 import jakarta.validation.Valid;
@@ -15,17 +15,17 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.*;
 
-import com.rotiprata.api.browsing.response.GetHistoryDTO;
-import com.rotiprata.api.browsing.request.SaveHistoryRequestDTO;
+import com.rotiprata.api.browsing.dto.GetHistoryDTO;
+import com.rotiprata.api.browsing.dto.SaveHistoryRequestDTO;
 import com.rotiprata.api.browsing.service.BrowsingService;
-import com.rotiprata.api.chat.message.ChatbotMessageDTO;
+import com.rotiprata.api.chat.dto.ChatbotMessageDTO;
 import com.rotiprata.api.chat.service.ChatService;
 import com.rotiprata.api.content.service.ContentService;
 import com.rotiprata.api.lesson.service.LessonQuizService;
 import com.rotiprata.api.lesson.service.LessonService;
-import com.rotiprata.api.user.model.Profile;
-import com.rotiprata.api.user.request.UpdateProfileRequest;
-import com.rotiprata.api.user.response.UserBadgeResponse;
+import com.rotiprata.api.user.domain.Profile;
+import com.rotiprata.api.user.dto.UpdateProfileRequest;
+import com.rotiprata.api.user.dto.UserBadgeResponse;
 import com.rotiprata.api.user.service.UserService;
 
 @RestController

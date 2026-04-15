@@ -1,4 +1,4 @@
-package com.rotiprata.api.content.request;
+package com.rotiprata.api.content.dto;
 
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotEmpty;
@@ -7,7 +7,7 @@ import jakarta.validation.constraints.Size;
 import java.util.List;
 import java.util.UUID;
 
-import com.rotiprata.api.content.types.ContentType;
+import com.rotiprata.api.content.domain.ContentType;
 
 public record ContentSubmitRequest(
     @NotBlank @Size(max = 80) String title,

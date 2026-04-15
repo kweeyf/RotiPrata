@@ -1,7 +1,7 @@
 package com.rotiprata.api.browsing.service;
 
-import com.rotiprata.api.browsing.response.ContentSearchDTO;
-import com.rotiprata.api.browsing.response.GetHistoryDTO;
+import com.rotiprata.api.browsing.dto.ContentSearchDTO;
+import com.rotiprata.api.browsing.dto.GetHistoryDTO;
 import java.time.Instant;
 import java.util.List;
 

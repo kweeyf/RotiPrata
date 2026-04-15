@@ -1,4 +1,4 @@
-package com.rotiprata.api.content.request;
+package com.rotiprata.api.content.dto;
 
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.Size;

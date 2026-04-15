@@ -1,4 +1,4 @@
-package com.rotiprata.api.admin.validation;
+package com.rotiprata.api.admin.dto;
 
 public record AdminValidationError(
     String step,

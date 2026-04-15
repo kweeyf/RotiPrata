@@ -1,4 +1,4 @@
-package com.rotiprata.api.admin.response;
+package com.rotiprata.api.admin.dto;
 
 import java.util.List;
 import java.util.Map;

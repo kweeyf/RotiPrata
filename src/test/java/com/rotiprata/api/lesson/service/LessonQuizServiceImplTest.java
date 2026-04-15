@@ -1,9 +1,9 @@
 package com.rotiprata.api.lesson.service;
 
-import com.rotiprata.api.lesson.response.LessonHeartsStatusResponse;
-import com.rotiprata.api.lesson.request.LessonQuizAnswerRequest;
-import com.rotiprata.api.lesson.response.LessonQuizAnswerResponse;
-import com.rotiprata.api.lesson.response.LessonQuizStateResponse;
+import com.rotiprata.api.lesson.dto.LessonHeartsStatusResponse;
+import com.rotiprata.api.lesson.dto.LessonQuizAnswerRequest;
+import com.rotiprata.api.lesson.dto.LessonQuizAnswerResponse;
+import com.rotiprata.api.lesson.dto.LessonQuizStateResponse;
 import com.rotiprata.api.lesson.utils.LessonFlowConstants;
 import com.rotiprata.api.lesson.utils.quiz.LessonQuizGraderRegistry;
 import com.rotiprata.api.lesson.utils.quiz.MultipleChoiceQuestionGrader;
@@ -38,9 +38,6 @@ import static org.mockito.Mockito.when;
 import org.springframework.web.server.ResponseStatusException;
 import org.springframework.http.HttpStatus;
 
-/**
- * Covers lesson quiz service scenarios 
- */
 @ExtendWith(MockitoExtension.class)
 class LessonQuizServiceImplTest {
 
@@ -63,9 +60,6 @@ class LessonQuizServiceImplTest {
     private Map<String, Object> firstQuestion;
     private Map<String, Object> secondQuestion;
 
-    /**
-     * Builds the shared test fixture and default mock behavior for each scenario.
-     */
     @BeforeEach
     void setUp() {
         lessonQuizService = new LessonQuizServiceImpl(
@@ -84,9 +78,6 @@ class LessonQuizServiceImplTest {
         secondQuestion = multipleChoiceQuestion(secondQuestionId, 1);
     }
 
-    /**
-     * Verifies that answer question should return persisted hearts when wrong answer consumes heart.
-     */
     @Test
     void answerQuestion_ShouldReturnPersistedHearts_WhenWrongAnswerConsumesHeart() {
         // arrange
@@ -137,9 +128,6 @@ class LessonQuizServiceImplTest {
         assertEquals(updatedAt.plusHours(24), refillAt);
     }
 
-    /**
-     * Verifies that answer question should keep deducted hearts when full hearts row has stale refill time.
-     */
     @Test
     void answerQuestion_ShouldKeepDeductedHearts_WhenFullHeartsRowHasStaleRefillTime() {
         // arrange
@@ -195,9 +183,6 @@ class LessonQuizServiceImplTest {
         }
     }
 
-    /**
-     * Verifies that answer question should keep hearts unchanged when answer is correct.
-     */
     @Test
     void answerQuestion_ShouldKeepHeartsUnchanged_WhenAnswerIsCorrect() {
         // arrange
@@ -237,9 +222,6 @@ class LessonQuizServiceImplTest {
         verify(supabaseRestClient, never()).patchList(eq("user_quiz_hearts"), anyString(), any(), eq(ACCESS_TOKEN), any());
     }
 
-    /**
-     * Verifies that answer question should block quiz when wrong answer consumes last heart.
-     */
     @Test
     void answerQuestion_ShouldBlockQuiz_WhenWrongAnswerConsumesLastHeart() {
         // arrange
@@ -278,9 +260,6 @@ class LessonQuizServiceImplTest {
         assertNull(response.nextQuestion());
     }
 
-    /**
-     * Verifies that get quiz state should return blocked state when hearts are zero.
-     */
     @Test
     void getQuizState_ShouldReturnBlockedState_WhenHeartsAreZero() {
         // arrange
@@ -309,9 +288,6 @@ class LessonQuizServiceImplTest {
         assertNull(response.currentQuestion());
     }
 
-    /**
-     * Verifies that get progress metadata should block only quiz when hearts are zero.
-     */
     @Test
     void getProgressMetadata_ShouldBlockOnlyQuiz_WhenHeartsAreZero() {
         // arrange
@@ -345,9 +321,6 @@ class LessonQuizServiceImplTest {
         assertEquals(0, response.heartsRemaining());
     }
 
-    /**
-     * Verifies that get hearts status should refill to max when refill time has passed.
-     */
     @Test
     void getHeartsStatus_ShouldRefillToMax_WhenRefillTimeHasPassed() {
         // arrange
@@ -369,9 +342,6 @@ class LessonQuizServiceImplTest {
         verify(supabaseRestClient).patchList(eq("user_quiz_hearts"), anyString(), any(), eq(ACCESS_TOKEN), any());
     }
 
-    /**
-     * Verifies that get hearts status should reschedule refill time when hearts are already full.
-     */
     @Test
     void getHeartsStatus_ShouldRescheduleRefillTime_WhenHeartsAreAlreadyFull() {
         // arrange
@@ -393,9 +363,6 @@ class LessonQuizServiceImplTest {
         verify(supabaseRestClient).patchList(eq("user_quiz_hearts"), anyString(), any(), eq(ACCESS_TOKEN), any());
     }
 
-    /**
-     * Verifies that get progress metadata should repair missing refill schedule when full hearts loaded.
-     */
     @Test
     void getProgressMetadata_ShouldRepairMissingRefillSchedule_WhenFullHeartsLoaded() {
         // arrange
@@ -432,9 +399,6 @@ class LessonQuizServiceImplTest {
         verify(supabaseRestClient).patchList(eq("user_quiz_hearts"), anyString(), any(), eq(ACCESS_TOKEN), any());
     }
 
-    /**
-     * Verifies that answer question should still pass quiz when badge achievement already exists.
-     */
     @Test
     void answerQuestion_ShouldStillPassQuiz_WhenBadgeAchievementAlreadyExists() {
         // arrange
@@ -502,9 +466,6 @@ class LessonQuizServiceImplTest {
         verify(supabaseAdminRestClient, never()).postList(eq("user_achievements"), any(), any());
     }
 
-    /**
-     * Handles learner lesson.
-     */
     private Map<String, Object> learnerLesson() {
         Map<String, Object> map = new LinkedHashMap<>();
         map.put("id", lessonId.toString());
@@ -517,9 +478,6 @@ class LessonQuizServiceImplTest {
         return map;
     }
 
-    /**
-     * Handles hearts row.
-     */
     private Map<String, Object> heartsRow(int heartsRemaining, OffsetDateTime refillAt) {
         Map<String, Object> row = new LinkedHashMap<>();
         row.put("user_id", userId.toString());
@@ -528,9 +486,6 @@ class LessonQuizServiceImplTest {
         return row;
     }
 
-    /**
-     * Completes the d progress row.
-     */
     private Map<String, Object> completedProgressRow() {
         Map<String, Object> row = new LinkedHashMap<>();
         row.put("id", UUID.randomUUID().toString());
@@ -542,9 +497,6 @@ class LessonQuizServiceImplTest {
         return row;
     }
 
-    /**
-     * Handles active attempt.
-     */
     private Map<String, Object> activeAttempt(
         String attemptId,
         int currentQuestionIndex,
@@ -565,9 +517,6 @@ class LessonQuizServiceImplTest {
         return attempt;
     }
 
-    /**
-     * Handles multiple choice question.
-     */
     private Map<String, Object> multipleChoiceQuestion(String questionId, int orderIndex) {
         Map<String, Object> question = new LinkedHashMap<>();
         question.put("id", questionId);

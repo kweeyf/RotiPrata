@@ -5,7 +5,7 @@ import io.github.bucket4j.Bucket;
 import io.github.bucket4j.ConsumptionProbe;
 import io.github.bucket4j.Refill;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.rotiprata.api.common.response.ApiErrorResponse;
+import com.rotiprata.api.zdto.ApiErrorResponse;
 
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
@@ -22,9 +22,6 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
-/**
- * Enforces the auth rate limit filter rules before requests reach the controller layer.
- */
 @Component
 public class AuthRateLimitFilter extends OncePerRequestFilter {
     private static final String LOGIN_PATH = "/api/auth/login";
@@ -45,9 +42,6 @@ public class AuthRateLimitFilter extends OncePerRequestFilter {
     private final Map<String, Bucket> buckets = new ConcurrentHashMap<>();
     private final ObjectMapper objectMapper = new ObjectMapper();
 
-    /**
-     * Applies endpoint-specific rate limits before the request continues down the filter chain.
-     */
     @Override
     protected void doFilterInternal(
         HttpServletRequest request,
@@ -84,9 +78,6 @@ public class AuthRateLimitFilter extends OncePerRequestFilter {
         objectMapper.writeValue(response.getWriter(), body);
     }
 
-    /**
-     * Resolves the limit.
-     */
     private RateLimitDefinition resolveLimit(String method, String path) {
         if (!"POST".equalsIgnoreCase(method) && !"PUT".equalsIgnoreCase(method)) {
             return null;
@@ -113,9 +104,6 @@ public class AuthRateLimitFilter extends OncePerRequestFilter {
         };
     }
 
-    /**
-     * Handles new bucket.
-     */
     private Bucket newBucket(RateLimitDefinition definition) {
         Bandwidth limit = Bandwidth.classic(
             definition.capacity(),
@@ -124,9 +112,6 @@ public class AuthRateLimitFilter extends OncePerRequestFilter {
         return Bucket.builder().addLimit(limit).build();
     }
 
-    /**
-     * Resolves the client ip.
-     */
     private String resolveClientIp(HttpServletRequest request) {
         String forwarded = request.getHeader("X-Forwarded-For");
         if (forwarded != null && !forwarded.isBlank()) {
@@ -145,9 +130,6 @@ public class AuthRateLimitFilter extends OncePerRequestFilter {
         return request.getRemoteAddr();
     }
 
-    /**
-     * Resolves the rate limit key.
-     */
     private String resolveRateLimitKey(String path, HttpServletRequest request, RateLimitDefinition definition) {
         if (path != null
             && path.startsWith("/api/lessons/")

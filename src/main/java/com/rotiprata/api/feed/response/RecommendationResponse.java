@@ -1,4 +1,4 @@
-package com.rotiprata.api.feed.response;
+package com.rotiprata.api.zdto;
 
 import java.util.List;
 import java.util.Map;

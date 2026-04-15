@@ -1,19 +1,19 @@
 package com.rotiprata.api.content.controller;
 
-import com.rotiprata.api.content.model.Content;
-import com.rotiprata.api.content.types.ContentType;
-import com.rotiprata.api.content.request.ContentCommentCreateRequest;
-import com.rotiprata.api.content.response.ContentCommentResponse;
-import com.rotiprata.api.content.request.ContentFlagRequest;
-import com.rotiprata.api.content.request.ContentMediaStartLinkRequest;
-import com.rotiprata.api.content.response.ContentMediaStartResponse;
-import com.rotiprata.api.content.response.ContentMediaStatusResponse;
-import com.rotiprata.api.content.request.ContentPlaybackEventRequest;
-import com.rotiprata.api.content.response.ContentQuizResponse;
-import com.rotiprata.api.content.request.ContentQuizSubmitRequest;
-import com.rotiprata.api.content.response.ContentQuizSubmitResponse;
-import com.rotiprata.api.content.request.ContentSubmitRequest;
-import com.rotiprata.api.content.request.ContentUpdateRequest;
+import com.rotiprata.api.content.domain.Content;
+import com.rotiprata.api.content.domain.ContentType;
+import com.rotiprata.api.content.dto.ContentCommentCreateRequest;
+import com.rotiprata.api.content.dto.ContentCommentResponse;
+import com.rotiprata.api.content.dto.ContentFlagRequest;
+import com.rotiprata.api.content.dto.ContentMediaStartLinkRequest;
+import com.rotiprata.api.content.dto.ContentMediaStartResponse;
+import com.rotiprata.api.content.dto.ContentMediaStatusResponse;
+import com.rotiprata.api.content.dto.ContentPlaybackEventRequest;
+import com.rotiprata.api.content.dto.ContentQuizResponse;
+import com.rotiprata.api.content.dto.ContentQuizSubmitRequest;
+import com.rotiprata.api.content.dto.ContentQuizSubmitResponse;
+import com.rotiprata.api.content.dto.ContentSubmitRequest;
+import com.rotiprata.api.content.dto.ContentUpdateRequest;
 import com.rotiprata.api.content.service.ContentDraftService;
 import com.rotiprata.api.content.service.ContentQuizService;
 import com.rotiprata.api.content.service.ContentService;
@@ -40,9 +40,6 @@ import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
-/**
- * Exposes REST endpoints for the content controller flows.
- */
 @RestController
 @RequestMapping("/api/content")
 public class ContentController {
@@ -50,9 +47,6 @@ public class ContentController {
     private final ContentService contentService;
     private final ContentQuizService contentQuizService;
 
-    /**
-     * Creates a content controller instance with its collaborators.
-     */
     public ContentController(
         ContentDraftService contentDraftService,
         ContentService contentService,
@@ -63,9 +57,6 @@ public class ContentController {
         this.contentQuizService = contentQuizService;
     }
 
-    /**
-     * Starts the upload.
-     */
     @PostMapping("/uploads")
     @ResponseStatus(HttpStatus.ACCEPTED)
     public ContentMediaStartResponse startUpload(
@@ -83,9 +74,6 @@ public class ContentController {
         return contentDraftService.startUpload(userId, contentType, file);
     }
 
-    /**
-     * Starts the upload alias.
-     */
     @Hidden
     @Deprecated
     @PostMapping("/media/start")
@@ -97,9 +85,6 @@ public class ContentController {
         return startUpload(jwt, file);
     }
 
-    /**
-     * Starts the link.
-     */
     @PostMapping("/link-imports")
     @ResponseStatus(HttpStatus.ACCEPTED)
     public ContentMediaStartResponse startLink(
@@ -110,9 +95,6 @@ public class ContentController {
         return contentDraftService.startLink(userId, request.sourceUrl());
     }
 
-    /**
-     * Starts the link alias.
-     */
     @Hidden
     @Deprecated
     @PostMapping("/media/start-link")
@@ -124,9 +106,6 @@ public class ContentController {
         return startLink(jwt, request);
     }
 
-    /**
-     * Updates the draft.
-     */
     @PatchMapping("/{contentId}")
     public Content updateDraft(
         @AuthenticationPrincipal Jwt jwt,
@@ -137,9 +116,6 @@ public class ContentController {
         return contentDraftService.updateDraft(userId, contentId, request);
     }
 
-    /**
-     * Creates the submission.
-     */
     @PostMapping("/{contentId}/submission")
     public Content createSubmission(
         @AuthenticationPrincipal Jwt jwt,
@@ -150,9 +126,6 @@ public class ContentController {
         return contentDraftService.submit(userId, contentId, request);
     }
 
-    /**
-     * Handles submit.
-     */
     @Hidden
     @Deprecated
     @PostMapping("/{contentId}/submit")
@@ -164,9 +137,6 @@ public class ContentController {
         return createSubmission(jwt, contentId, request);
     }
 
-    /**
-     * Handles media status.
-     */
     @GetMapping("/{contentId}/media")
     public ContentMediaStatusResponse mediaStatus(
         @AuthenticationPrincipal Jwt jwt,
@@ -176,9 +146,6 @@ public class ContentController {
         return contentDraftService.getMediaStatus(userId, contentId);
     }
 
-    /**
-     * Returns the content.
-     */
     @GetMapping("/{contentId}")
     public Map<String, Object> getContent(
         @AuthenticationPrincipal Jwt jwt,
@@ -188,9 +155,6 @@ public class ContentController {
         return contentService.getContentById(userId, contentId, SecurityUtils.getAccessToken());
     }
 
-    /**
-     * Returns the similar content.
-     */
     @GetMapping("/{contentId}/similar")
     public List<Map<String, Object>> getSimilarContent(
         @AuthenticationPrincipal Jwt jwt,
@@ -201,9 +165,6 @@ public class ContentController {
         return contentService.getSimilarContent(userId, contentId, SecurityUtils.getAccessToken(), limit);
     }
 
-    /**
-     * Tracks the view.
-     */
     @PostMapping("/{contentId}/views")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void trackView(
@@ -214,9 +175,6 @@ public class ContentController {
         contentService.trackView(userId, contentId);
     }
 
-    /**
-     * Tracks the view alias.
-     */
     @Hidden
     @Deprecated
     @PostMapping("/{contentId}/view")
@@ -228,9 +186,6 @@ public class ContentController {
         trackView(jwt, contentId);
     }
 
-    /**
-     * Tracks the playback event.
-     */
     @PostMapping("/{contentId}/playback-events")
     @ResponseStatus(HttpStatus.ACCEPTED)
     public void trackPlaybackEvent(
@@ -242,9 +197,6 @@ public class ContentController {
         contentService.recordPlaybackEvent(userId, contentId, request);
     }
 
-    /**
-     * Handles like.
-     */
     @PostMapping("/{contentId}/likes")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void like(
@@ -255,9 +207,6 @@ public class ContentController {
         contentService.likeContent(userId, contentId, SecurityUtils.getAccessToken());
     }
 
-    /**
-     * Likes the alias.
-     */
     @Hidden
     @Deprecated
     @PostMapping("/{contentId}/like")
@@ -269,9 +218,6 @@ public class ContentController {
         like(jwt, contentId);
     }
 
-    /**
-     * Handles unlike.
-     */
     @DeleteMapping("/{contentId}/likes")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void unlike(
@@ -282,9 +228,6 @@ public class ContentController {
         contentService.unlikeContent(userId, contentId, SecurityUtils.getAccessToken());
     }
 
-    /**
-     * Removes the like from the alias.
-     */
     @Hidden
     @Deprecated
     @DeleteMapping("/{contentId}/like")
@@ -296,9 +239,6 @@ public class ContentController {
         unlike(jwt, contentId);
     }
 
-    /**
-     * Handles save.
-     */
     @PostMapping("/{contentId}/saves")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void save(
@@ -309,9 +249,6 @@ public class ContentController {
         contentService.saveContent(userId, contentId, SecurityUtils.getAccessToken());
     }
 
-    /**
-     * Saves the alias.
-     */
     @Hidden
     @Deprecated
     @PostMapping("/{contentId}/save")
@@ -323,9 +260,6 @@ public class ContentController {
         save(jwt, contentId);
     }
 
-    /**
-     * Handles unsave.
-     */
     @DeleteMapping("/{contentId}/saves")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void unsave(
@@ -336,9 +270,6 @@ public class ContentController {
         contentService.unsaveContent(userId, contentId, SecurityUtils.getAccessToken());
     }
 
-    /**
-     * Removes the saved marker from the alias.
-     */
     @Hidden
     @Deprecated
     @DeleteMapping("/{contentId}/save")
@@ -350,9 +281,6 @@ public class ContentController {
         unsave(jwt, contentId);
     }
 
-    /**
-     * Handles share.
-     */
     @PostMapping("/{contentId}/shares")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void share(
@@ -363,9 +291,6 @@ public class ContentController {
         contentService.shareContent(userId, contentId, SecurityUtils.getAccessToken());
     }
 
-    /**
-     * Records a share for the alias.
-     */
     @Hidden
     @Deprecated
     @PostMapping("/{contentId}/share")
@@ -377,9 +302,6 @@ public class ContentController {
         share(jwt, contentId);
     }
 
-    /**
-     * Handles content quiz.
-     */
     @GetMapping("/{contentId}/quiz")
     public ResponseEntity<ContentQuizResponse> contentQuiz(
         @AuthenticationPrincipal Jwt jwt,
@@ -393,9 +315,6 @@ public class ContentController {
         return ResponseEntity.ok(quiz);
     }
 
-    /**
-     * Creates the content quiz submission.
-     */
     @PostMapping("/{contentId}/quiz-submissions")
     public ContentQuizSubmitResponse createContentQuizSubmission(
         @AuthenticationPrincipal Jwt jwt,
@@ -406,9 +325,6 @@ public class ContentController {
         return contentQuizService.submitContentQuiz(userId, contentId, request, SecurityUtils.getAccessToken());
     }
 
-    /**
-     * Submits the content quiz.
-     */
     @Hidden
     @Deprecated
     @PostMapping("/{contentId}/quiz/submit")
@@ -420,9 +336,6 @@ public class ContentController {
         return createContentQuizSubmission(jwt, contentId, request);
     }
 
-    /**
-     * Handles comments.
-     */
     @GetMapping("/{contentId}/comments")
     public List<ContentCommentResponse> comments(
         @AuthenticationPrincipal Jwt jwt,
@@ -434,9 +347,6 @@ public class ContentController {
         return contentService.listComments(userId, contentId, limit, offset, SecurityUtils.getAccessToken());
     }
 
-    /**
-     * Creates the comment.
-     */
     @PostMapping("/{contentId}/comments")
     @ResponseStatus(HttpStatus.CREATED)
     public ContentCommentResponse createComment(
@@ -448,9 +358,6 @@ public class ContentController {
         return contentService.createComment(userId, contentId, request, SecurityUtils.getAccessToken());
     }
 
-    /**
-     * Deletes the comment.
-     */
     @DeleteMapping("/{contentId}/comments/{commentId}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void deleteComment(
@@ -462,9 +369,6 @@ public class ContentController {
         contentService.deleteComment(userId, contentId, commentId, SecurityUtils.getAccessToken());
     }
 
-    /**
-     * Handles flag.
-     */
     @PostMapping("/{contentId}/flags")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void flag(
@@ -476,9 +380,6 @@ public class ContentController {
         contentService.flagContent(userId, contentId, request, SecurityUtils.getAccessToken());
     }
 
-    /**
-     * Flags the alias.
-     */
     @Hidden
     @Deprecated
     @PostMapping("/{contentId}/flag")
@@ -491,9 +392,6 @@ public class ContentController {
         flag(jwt, contentId, request);
     }
 
-    /**
-     * Detects the content type.
-     */
     private ContentType detectContentType(MultipartFile file) {
         String contentType = file.getContentType();
         if (contentType == null) {

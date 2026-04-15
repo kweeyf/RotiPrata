@@ -1,9 +1,9 @@
 package com.rotiprata.api.browsing.service;
 
 import com.fasterxml.jackson.core.type.TypeReference;
-import com.rotiprata.api.browsing.response.ContentSearchDTO;
-import com.rotiprata.api.browsing.response.GetHistoryDTO;
-import com.rotiprata.api.browsing.model.SaveHistoryDTO;
+import com.rotiprata.api.browsing.dto.ContentSearchDTO;
+import com.rotiprata.api.browsing.dto.GetHistoryDTO;
+import com.rotiprata.api.browsing.dto.SaveHistoryDTO;
 import com.rotiprata.api.content.service.ContentService;
 import com.rotiprata.api.lesson.service.LessonService;
 import com.rotiprata.infrastructure.supabase.SupabaseRestClient;

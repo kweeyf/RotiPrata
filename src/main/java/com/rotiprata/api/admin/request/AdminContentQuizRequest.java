@@ -1,4 +1,4 @@
-package com.rotiprata.api.admin.request;
+package com.rotiprata.api.admin.dto;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import java.util.List;

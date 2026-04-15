@@ -1,6 +1,6 @@
-package com.rotiprata.api.admin.request;
+package com.rotiprata.api.admin.dto;
 
-import com.rotiprata.security.authorization.AppRole;
+import com.rotiprata.domain.AppRole;
 import jakarta.validation.constraints.NotNull;
 
 public record AdminUserRoleUpdateRequest(

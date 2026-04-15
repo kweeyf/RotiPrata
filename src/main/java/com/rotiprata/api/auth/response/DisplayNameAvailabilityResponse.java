@@ -1,4 +1,4 @@
-package com.rotiprata.api.auth.response;
+package com.rotiprata.api.zdto;
 
 public record DisplayNameAvailabilityResponse(
     boolean available,

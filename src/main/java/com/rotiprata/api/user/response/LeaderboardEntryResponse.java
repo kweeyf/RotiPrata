@@ -1,4 +1,4 @@
-package com.rotiprata.api.user.response;
+package com.rotiprata.api.zdto;
 
 import java.util.UUID;
 

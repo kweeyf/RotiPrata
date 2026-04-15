@@ -1,4 +1,4 @@
-package com.rotiprata.api.admin.request;
+package com.rotiprata.api.zdto;
 
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;

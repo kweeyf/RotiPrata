@@ -1,4 +1,4 @@
-package com.rotiprata.api.content.types;
+package com.rotiprata.api.content.domain;
 
 public enum ContentStatus {
     PENDING,

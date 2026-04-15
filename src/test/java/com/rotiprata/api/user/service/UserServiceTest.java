@@ -15,12 +15,12 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import com.rotiprata.api.user.model.Profile;
-import com.rotiprata.api.user.model.UserRole;
-import com.rotiprata.api.user.response.UserBadgeResponse;
-import com.rotiprata.api.user.response.LeaderboardResponse;
-import com.rotiprata.security.authorization.AppRole;
-import com.rotiprata.api.user.preference.ThemePreference;
+import com.rotiprata.api.user.domain.Profile;
+import com.rotiprata.api.user.domain.UserRole;
+import com.rotiprata.api.user.dto.UserBadgeResponse;
+import com.rotiprata.api.zdto.LeaderboardResponse;
+import com.rotiprata.domain.AppRole;
+import com.rotiprata.domain.ThemePreference;
 import com.rotiprata.infrastructure.supabase.SupabaseAdminRestClient;
 import com.rotiprata.infrastructure.supabase.SupabaseRestClient;
 import java.time.OffsetDateTime;

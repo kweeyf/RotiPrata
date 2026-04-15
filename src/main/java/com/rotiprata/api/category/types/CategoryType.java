@@ -1,4 +1,4 @@
-package com.rotiprata.api.category.types;
+package com.rotiprata.api.category.domain;
 
 public enum CategoryType {
     SLANG,

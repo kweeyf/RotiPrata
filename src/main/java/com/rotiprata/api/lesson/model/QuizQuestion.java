@@ -1,4 +1,4 @@
-package com.rotiprata.api.lesson.model;
+package com.rotiprata.api.lesson.domain;
 
 import java.time.OffsetDateTime;
 import java.util.UUID;

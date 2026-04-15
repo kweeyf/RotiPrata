@@ -1,4 +1,4 @@
-package com.rotiprata.api.lesson.model;
+package com.rotiprata.api.lesson.domain;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import java.time.OffsetDateTime;

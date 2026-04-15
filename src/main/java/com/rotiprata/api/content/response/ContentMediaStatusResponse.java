@@ -1,4 +1,4 @@
-package com.rotiprata.api.content.response;
+package com.rotiprata.api.content.dto;
 
 public record ContentMediaStatusResponse(
     String status,

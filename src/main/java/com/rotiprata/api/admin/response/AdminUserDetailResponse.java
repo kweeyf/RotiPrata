@@ -1,11 +1,11 @@
-package com.rotiprata.api.admin.response;
+package com.rotiprata.api.admin.dto;
 
 import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Map;
 
-import com.rotiprata.api.chat.message.ChatbotMessageDTO;
-import com.rotiprata.api.user.response.UserBadgeResponse;
+import com.rotiprata.api.chat.dto.ChatbotMessageDTO;
+import com.rotiprata.api.user.dto.UserBadgeResponse;
 
 public record AdminUserDetailResponse(
     AdminUserSummaryResponse summary,

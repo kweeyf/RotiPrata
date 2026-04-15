@@ -1,6 +1,4 @@
-package com.rotiprata.api.admin.response;
-
-import com.rotiprata.api.admin.validation.AdminValidationError;
+package com.rotiprata.api.admin.dto;
 
 import java.util.List;
 import java.util.Map;

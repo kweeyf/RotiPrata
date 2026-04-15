@@ -1,6 +1,6 @@
 package com.rotiprata.api.category.controller;
 
-import com.rotiprata.api.category.model.Category;
+import com.rotiprata.api.category.domain.Category;
 import com.rotiprata.api.category.service.CategoryService;
 import io.restassured.http.ContentType;
 import io.restassured.module.mockmvc.RestAssuredMockMvc;

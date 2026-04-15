@@ -1,4 +1,4 @@
-package com.rotiprata.api.user.model;
+package com.rotiprata.api.user.domain;
 
 import java.time.OffsetDateTime;
 import java.util.UUID;

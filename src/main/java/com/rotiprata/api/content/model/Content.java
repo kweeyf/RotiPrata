@@ -1,11 +1,7 @@
-package com.rotiprata.api.content.model;
-
-import com.rotiprata.api.content.types.ContentType;
-
-import com.rotiprata.api.content.types.ContentStatus;
+package com.rotiprata.api.content.domain;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.rotiprata.api.category.model.Category;
+import com.rotiprata.api.category.domain.Category;
 
 import java.time.OffsetDateTime;
 import java.util.UUID;

@@ -1,19 +1,19 @@
 package com.rotiprata.api.admin.controller;
 
-import com.rotiprata.api.admin.request.AdminContentQuizRequest;
-import com.rotiprata.api.admin.request.AdminContentReviewRequest;
-import com.rotiprata.api.admin.request.AdminContentUpdateRequest;
-import com.rotiprata.api.admin.request.AdminFlagResolutionRequest;
-import com.rotiprata.api.admin.response.AdminStatsResponse;
-import com.rotiprata.api.admin.response.AdminUserDetailResponse;
-import com.rotiprata.api.admin.request.AdminUserRoleUpdateRequest;
-import com.rotiprata.api.admin.request.AdminUserStatusUpdateRequest;
-import com.rotiprata.api.admin.response.AdminUserSummaryResponse;
+import com.rotiprata.api.admin.dto.AdminContentQuizRequest;
+import com.rotiprata.api.admin.dto.AdminContentReviewRequest;
+import com.rotiprata.api.admin.dto.AdminContentUpdateRequest;
+import com.rotiprata.api.admin.dto.AdminFlagResolutionRequest;
+import com.rotiprata.api.admin.dto.AdminStatsResponse;
+import com.rotiprata.api.admin.dto.AdminUserDetailResponse;
+import com.rotiprata.api.admin.dto.AdminUserRoleUpdateRequest;
+import com.rotiprata.api.admin.dto.AdminUserStatusUpdateRequest;
+import com.rotiprata.api.admin.dto.AdminUserSummaryResponse;
 import com.rotiprata.api.admin.service.AdminService;
-import com.rotiprata.api.content.model.Content;
-import com.rotiprata.api.content.response.ContentQuizQuestionResponse;
+import com.rotiprata.api.content.domain.Content;
+import com.rotiprata.api.content.dto.ContentQuizQuestionResponse;
 import com.rotiprata.api.content.service.ContentQuizService;
-import com.rotiprata.api.admin.request.RejectContentRequest;
+import com.rotiprata.api.zdto.RejectContentRequest;
 import com.rotiprata.security.SecurityUtils;
 import io.swagger.v3.oas.annotations.Hidden;
 import jakarta.validation.Valid;
@@ -35,35 +35,23 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.server.ResponseStatusException;
 
-/**
- * Exposes REST endpoints for the admin controller flows.
- */
 @RestController
 @RequestMapping("/api/admin")
 public class AdminController {
     private final AdminService adminService;
     private final ContentQuizService contentQuizService;
 
-    /**
-     * Creates a admin controller instance with its collaborators.
-     */
     public AdminController(AdminService adminService, ContentQuizService contentQuizService) {
         this.adminService = adminService;
         this.contentQuizService = contentQuizService;
     }
 
-    /**
-     * Handles stats.
-     */
     @GetMapping("/stats")
     public AdminStatsResponse stats(@AuthenticationPrincipal Jwt jwt) {
         UUID adminUserId = SecurityUtils.getUserId(jwt);
         return adminService.getStats(adminUserId, SecurityUtils.getAccessToken());
     }
 
-    /**
-     * Handles users.
-     */
     @GetMapping("/users")
     public List<AdminUserSummaryResponse> users(
         @AuthenticationPrincipal Jwt jwt,
@@ -73,9 +61,6 @@ public class AdminController {
         return adminService.getUsers(adminUserId, query, SecurityUtils.getAccessToken());
     }
 
-    /**
-     * Handles user detail.
-     */
     @GetMapping("/users/{userId}")
     public AdminUserDetailResponse userDetail(
         @AuthenticationPrincipal Jwt jwt,
@@ -85,9 +70,6 @@ public class AdminController {
         return adminService.getUserDetail(adminUserId, userId, SecurityUtils.getAccessToken());
     }
 
-    /**
-     * Updates the user role.
-     */
     @PutMapping("/users/{userId}/role")
     public AdminUserSummaryResponse updateUserRole(
         @AuthenticationPrincipal Jwt jwt,
@@ -98,9 +80,6 @@ public class AdminController {
         return adminService.updateUserRole(adminUserId, userId, request.role(), SecurityUtils.getAccessToken());
     }
 
-    /**
-     * Updates the user status.
-     */
     @PutMapping("/users/{userId}/status")
     public AdminUserSummaryResponse updateUserStatus(
         @AuthenticationPrincipal Jwt jwt,
@@ -111,9 +90,6 @@ public class AdminController {
         return adminService.updateUserStatus(adminUserId, userId, request.status(), SecurityUtils.getAccessToken());
     }
 
-    /**
-     * Handles reset lesson progress.
-     */
     @DeleteMapping("/users/{userId}/lessons/{lessonId}/progress")
     public ResponseEntity<Void> resetLessonProgress(
         @AuthenticationPrincipal Jwt jwt,
@@ -125,18 +101,12 @@ public class AdminController {
         return ResponseEntity.noContent().build();
     }
 
-    /**
-     * Handles moderation queue.
-     */
     @GetMapping("/moderation-queue")
     public List<Map<String, Object>> moderationQueue(@AuthenticationPrincipal Jwt jwt) {
         UUID adminUserId = SecurityUtils.getUserId(jwt);
         return adminService.getModerationQueue(adminUserId, SecurityUtils.getAccessToken());
     }
 
-    /**
-     * Handles review content.
-     */
     @PutMapping("/content/{contentId}/review")
     public ResponseEntity<Void> reviewContent(
         @AuthenticationPrincipal Jwt jwt,
@@ -152,9 +122,6 @@ public class AdminController {
         return ResponseEntity.noContent().build();
     }
 
-    /**
-     * Handles approve content.
-     */
     @Hidden
     @Deprecated
     @PutMapping("/content/{contentId}/approve")
@@ -165,9 +132,6 @@ public class AdminController {
         return reviewContent(jwt, contentId, new AdminContentReviewRequest("approved", null));
     }
 
-    /**
-     * Updates the content.
-     */
     @PutMapping("/content/{contentId}")
     public Content updateContent(
         @AuthenticationPrincipal Jwt jwt,
@@ -178,9 +142,6 @@ public class AdminController {
         return adminService.updateContentMetadata(adminUserId, contentId, request, SecurityUtils.getAccessToken());
     }
 
-    /**
-     * Handles reject content.
-     */
     @Hidden
     @Deprecated
     @PutMapping("/content/{contentId}/reject")
@@ -192,9 +153,6 @@ public class AdminController {
         return reviewContent(jwt, contentId, new AdminContentReviewRequest("rejected", request.feedback()));
     }
 
-    /**
-     * Handles content quiz.
-     */
     @GetMapping("/content/{contentId}/quiz")
     public List<ContentQuizQuestionResponse> contentQuiz(
         @AuthenticationPrincipal Jwt jwt,
@@ -204,9 +162,6 @@ public class AdminController {
         return contentQuizService.getAdminContentQuiz(adminUserId, contentId, SecurityUtils.getAccessToken());
     }
 
-    /**
-     * Updates the content quiz.
-     */
     @PutMapping("/content/{contentId}/quiz")
     public List<ContentQuizQuestionResponse> updateContentQuiz(
         @AuthenticationPrincipal Jwt jwt,
@@ -217,18 +172,12 @@ public class AdminController {
         return contentQuizService.replaceAdminContentQuiz(adminUserId, contentId, request, SecurityUtils.getAccessToken());
     }
 
-    /**
-     * Flags the s.
-     */
     @GetMapping("/flags")
     public List<Map<String, Object>> flags(@AuthenticationPrincipal Jwt jwt) {
         UUID adminUserId = SecurityUtils.getUserId(jwt);
         return adminService.getOpenFlags(adminUserId, SecurityUtils.getAccessToken());
     }
 
-    /**
-     * Flags the reports.
-     */
     @GetMapping("/flags/{flagId}/reports")
     public Map<String, Object> flagReports(
         @AuthenticationPrincipal Jwt jwt,
@@ -240,9 +189,6 @@ public class AdminController {
         return adminService.getFlagReports(adminUserId, flagId, page, query, SecurityUtils.getAccessToken());
     }
 
-    /**
-     * Flags the review by content.
-     */
     @GetMapping("/flags/content/{contentId}/review")
     public Map<String, Object> flagReviewByContent(
         @AuthenticationPrincipal Jwt jwt,
@@ -260,9 +206,6 @@ public class AdminController {
         );
     }
 
-    /**
-     * Flags the reports by content.
-     */
     @GetMapping("/flags/content/{contentId}/reports")
     public Map<String, Object> flagReportsByContent(
         @AuthenticationPrincipal Jwt jwt,
@@ -284,9 +227,6 @@ public class AdminController {
         );
     }
 
-    /**
-     * Resolves the flag.
-     */
     @PutMapping("/flags/{flagId}/resolution")
     public ResponseEntity<Void> resolveFlag(
         @AuthenticationPrincipal Jwt jwt,
@@ -302,9 +242,6 @@ public class AdminController {
         return ResponseEntity.noContent().build();
     }
 
-    /**
-     * Resolves the flag alias.
-     */
     @Hidden
     @Deprecated
     @PutMapping("/flags/{flagId}/resolve")
@@ -315,9 +252,6 @@ public class AdminController {
         return resolveFlag(jwt, flagId, new AdminFlagResolutionRequest("resolved", null));
     }
 
-    /**
-     * Handles take down flag.
-     */
     @Hidden
     @Deprecated
     @PutMapping("/flags/{flagId}/take-down")
@@ -329,9 +263,6 @@ public class AdminController {
         return resolveFlag(jwt, flagId, new AdminFlagResolutionRequest("taken_down", request.feedback()));
     }
 
-    /**
-     * Normalizes the action status.
-     */
     private String normalizeActionStatus(String status) {
         if (status == null) {
             return "";

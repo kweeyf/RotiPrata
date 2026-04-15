@@ -1,9 +1,9 @@
-package com.rotiprata.api.content.model;
+package com.rotiprata.api.content.domain;
 
 import java.time.OffsetDateTime;
 import java.util.UUID;
 
-import com.rotiprata.api.lesson.model.Lesson;
+import com.rotiprata.api.lesson.domain.Lesson;
 
 import lombok.Getter;
 import lombok.NoArgsConstructor;

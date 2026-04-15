@@ -1,4 +1,4 @@
-package com.rotiprata.security.authorization;
+package com.rotiprata.domain;
 
 public enum AppRole {
     USER,

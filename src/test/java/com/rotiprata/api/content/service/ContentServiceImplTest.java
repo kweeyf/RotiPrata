@@ -1,12 +1,12 @@
 package com.rotiprata.api.content.service;
 
 import com.fasterxml.jackson.core.type.TypeReference;
-import com.rotiprata.api.browsing.response.ContentSearchDTO;
-import com.rotiprata.api.content.request.ContentCommentCreateRequest;
-import com.rotiprata.api.content.request.ContentFlagRequest;
-import com.rotiprata.api.content.request.ContentPlaybackEventRequest;
+import com.rotiprata.api.browsing.dto.ContentSearchDTO;
+import com.rotiprata.api.content.dto.ContentCommentCreateRequest;
+import com.rotiprata.api.content.dto.ContentFlagRequest;
+import com.rotiprata.api.content.dto.ContentPlaybackEventRequest;
 import com.rotiprata.api.user.service.UserService;
-import com.rotiprata.security.authorization.AppRole;
+import com.rotiprata.domain.AppRole;
 import com.rotiprata.infrastructure.supabase.SupabaseAdminRestClient;
 import com.rotiprata.infrastructure.supabase.SupabaseRestClient;
 import java.time.OffsetDateTime;
@@ -38,9 +38,6 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-/**
- * Covers content service scenarios 
- */
 @ExtendWith(MockitoExtension.class)
 class ContentServiceImplTest {
 
@@ -59,9 +56,6 @@ class ContentServiceImplTest {
     private UUID userId;
     private UUID contentId;
 
-    /**
-     * Builds the shared test fixture and default mock behavior for each scenario.
-     */
     @BeforeEach
     void setUp() {
         service = new ContentServiceImpl(
@@ -75,9 +69,6 @@ class ContentServiceImplTest {
         contentId = UUID.randomUUID();
     }
 
-    /**
-     * Verifies that get content by id should throw unauthorized when access token is missing.
-     */
     // Ensures missing tokens are rejected before any data call is made.
     @Test
     void getContentById_ShouldThrowUnauthorized_WhenAccessTokenIsMissing() {
@@ -94,9 +85,6 @@ class ContentServiceImplTest {
         verify(supabaseRestClient, never()).getList(anyString(), anyString(), anyString(), any(TypeReference.class));
     }
 
-    /**
-     * Handles suppress warnings.
-     */
     // Ensures content payload includes tags and stream metadata for playable media.
     @Test
     @SuppressWarnings("unchecked")
@@ -125,9 +113,6 @@ class ContentServiceImplTest {
         verify(contentCreatorEnrichmentService).enrichWithCreatorProfiles(any());
     }
 
-    /**
-     * Handles suppress warnings.
-     */
     // Ensures owner can still retrieve content via admin fallback when not approved.
     @Test
     @SuppressWarnings("unchecked")
@@ -154,9 +139,6 @@ class ContentServiceImplTest {
         verify(supabaseAdminRestClient).getList(eq("content"), contains("creator_id=eq." + userId), any(TypeReference.class));
     }
 
-   /**
-    * Handles suppress warnings.
-    */
    // Ensures similar content uses tag overlap ordering and obeys requested limit.
     @Test
     @SuppressWarnings("unchecked")
@@ -230,9 +212,6 @@ class ContentServiceImplTest {
         verify(supabaseRestClient, times(2)).getList(eq("content"), anyString(), eq("token"), any(TypeReference.class));
     }
 
-    /**
-     * Verifies that get profile content collection should throw bad request when collection is invalid.
-     */
     // Ensures profile collection rejects unsupported collection names.
     @Test
     void getProfileContentCollection_ShouldThrowBadRequest_WhenCollectionIsInvalid() {
@@ -249,9 +228,6 @@ class ContentServiceImplTest {
         verify(supabaseAdminRestClient, never()).getList(anyString(), anyString(), any(TypeReference.class));
     }
 
-    /**
-     * Handles suppress warnings.
-     */
     // Ensures search results merge title and tag hits while escaping unsafe query chars.
     @Test
     @SuppressWarnings("unchecked")
@@ -277,9 +253,6 @@ class ContentServiceImplTest {
         verify(supabaseRestClient).getList(eq("/content_tags"), contains("tag=ilike.*roti   *"), eq("token"), any(TypeReference.class));
     }
 
-    /**
-     * Handles suppress warnings.
-     */
     // Ensures playback event failures are swallowed without surfacing API errors.
     @Test
     @SuppressWarnings("unchecked")
@@ -304,9 +277,6 @@ class ContentServiceImplTest {
         verify(supabaseAdminRestClient).postList(eq("content_playback_events"), any(), any(TypeReference.class));
     }
 
-    /**
-     * Handles suppress warnings.
-     */
     // Ensures duplicate-like errors are tolerated and still refresh engagement counters.
     @Test
     @SuppressWarnings("unchecked")
@@ -334,9 +304,6 @@ class ContentServiceImplTest {
         verify(supabaseAdminRestClient).patchList(eq("content"), contains("id=eq." + contentId), any(), any(TypeReference.class));
     }
 
-    /**
-     * Handles suppress warnings.
-     */
     // Ensures flag creation blocks duplicate pending flags for the same user/content pair.
     @Test
     @SuppressWarnings("unchecked")
@@ -358,9 +325,6 @@ class ContentServiceImplTest {
         verify(supabaseRestClient, never()).postList(eq("content_flags"), any(), anyString(), any(TypeReference.class));
     }
 
-    /**
-     * Handles suppress warnings.
-     */
     // Ensures comments list resolves author names and returns anonymous fallback when missing.
     @Test
     @SuppressWarnings("unchecked")
@@ -393,9 +357,6 @@ class ContentServiceImplTest {
         verify(supabaseAdminRestClient).getList(eq("profiles"), anyString(), any(TypeReference.class));
     }
 
-    /**
-     * Handles suppress warnings.
-     */
     // Ensures comment creation validates parent id existence before insertion.
     @Test
     @SuppressWarnings("unchecked")
@@ -418,9 +379,6 @@ class ContentServiceImplTest {
         verify(supabaseRestClient, never()).postList(eq("content_comments"), any(), anyString(), any(TypeReference.class));
     }
 
-    /**
-     * Handles suppress warnings.
-     */
     // Ensures comment deletion is blocked for non-owner users without admin role.
     @Test
     @SuppressWarnings("unchecked")
@@ -445,9 +403,6 @@ class ContentServiceImplTest {
         verify(supabaseAdminRestClient, never()).patchList(eq("content_comments"), anyString(), any(), any(TypeReference.class));
     }
 
-    /**
-     * Handles suppress warnings.
-     */
     // Ensures media-status fallback retry occurs when schema mismatch error is returned.
     @Test
     @SuppressWarnings("unchecked")
@@ -489,9 +444,6 @@ class ContentServiceImplTest {
         verify(supabaseRestClient, times(3)).getList(eq("content"), anyString(), eq("token"), any(TypeReference.class));
     }
 
-    /**
-     * Handles suppress warnings.
-     */
     // Ensures analytics helper delegates to admin client for monthly flagged content retrieval.
     @Test
     @SuppressWarnings("unchecked")

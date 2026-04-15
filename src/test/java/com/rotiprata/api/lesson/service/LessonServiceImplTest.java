@@ -1,7 +1,7 @@
 package com.rotiprata.api.lesson.service;
 
-import com.rotiprata.api.admin.response.AdminPublishLessonResponse;
-import com.rotiprata.api.admin.request.AdminStepSaveRequest;
+import com.rotiprata.api.admin.dto.AdminPublishLessonResponse;
+import com.rotiprata.api.admin.dto.AdminStepSaveRequest;
 import com.rotiprata.api.generalutils.EmbeddingService;
 import com.rotiprata.api.lesson.utils.LessonFlowConstants;
 import com.rotiprata.application.MediaProcessingService;
@@ -35,9 +35,6 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
-/**
- * Covers lesson service scenarios 
- */
 @ExtendWith(MockitoExtension.class)
 class LessonServiceImplTest {
 
@@ -64,9 +61,6 @@ class LessonServiceImplTest {
     private UUID quizId;
     private UUID categoryId;
 
-    /**
-     * Builds the shared test fixture and default mock behavior for each scenario.
-     */
     @BeforeEach
     void setUp() {
         lessonService = new LessonServiceImpl(
@@ -87,9 +81,6 @@ class LessonServiceImplTest {
             .thenReturn(List.of());
     }
 
-    /**
-     * Verifies that create lesson should generate embedding when lesson is published.
-     */
     @Test
     void createLesson_ShouldGenerateEmbedding_WhenLessonIsPublished() {
         // Published lesson creation should restore the original embedding behavior.
@@ -122,9 +113,6 @@ class LessonServiceImplTest {
         );
     }
 
-    /**
-     * Verifies that create lesson should skip embedding when publish falls back to draft.
-     */
     @Test
     void createLesson_ShouldSkipEmbedding_WhenPublishFallsBackToDraft() {
         // Incomplete lesson content should downgrade publish to draft and skip embeddings.
@@ -157,9 +145,6 @@ class LessonServiceImplTest {
         );
     }
 
-    /**
-     * Verifies that publish lesson with validation should generate embedding when publish succeeds.
-     */
     @Test
     void publishLessonWithValidation_ShouldGenerateEmbedding_WhenPublishSucceeds() {
         // Publishing a validated lesson should write an embedding just like the original stable flow.
@@ -195,9 +180,6 @@ class LessonServiceImplTest {
         verify(supabaseAdminRestClient, times(2)).patchList(eq("lessons"), anyString(), any(), any());
     }
 
-    /**
-     * Verifies that publish lesson with validation should skip embedding when skip embedding is true.
-     */
     @Test
     void publishLessonWithValidation_ShouldSkipEmbedding_WhenSkipEmbeddingIsTrue() {
         // The publish path should honor the skip flag without blocking the publish itself.
@@ -231,9 +213,6 @@ class LessonServiceImplTest {
         verify(supabaseAdminRestClient, times(1)).patchList(eq("lessons"), anyString(), any(), any());
     }
 
-    /**
-     * Verifies that update lesson should reembed when published lesson content changes.
-     */
     @Test
     void updateLesson_ShouldReembed_WhenPublishedLessonContentChanges() {
         // Editing embedding-relevant lesson text should refresh the vector for published lessons.
@@ -269,9 +248,6 @@ class LessonServiceImplTest {
         verify(supabaseAdminRestClient, times(2)).patchList(eq("lessons"), anyString(), any(), any());
     }
 
-    /**
-     * Verifies that update lesson should reembed when content sections change on published lesson.
-     */
     @Test
     void updateLesson_ShouldReembed_WhenContentSectionsChangeOnPublishedLesson() {
         // Structured content edits should also refresh embeddings for published lessons.
@@ -317,9 +293,6 @@ class LessonServiceImplTest {
         verify(embeddingService).generateEmbedding(anyString());
     }
 
-    /**
-     * Verifies that update lesson should not reembed when only non content fields change.
-     */
     @Test
     void updateLesson_ShouldNotReembed_WhenOnlyNonContentFieldsChange() {
         // Non-content metadata edits should keep the existing embedding untouched.
@@ -353,9 +326,6 @@ class LessonServiceImplTest {
         verify(supabaseAdminRestClient, times(1)).patchList(eq("lessons"), anyString(), any(), any());
     }
 
-    /**
-     * Verifies that update lesson should not reembed when lesson is draft.
-     */
     @Test
     void updateLesson_ShouldNotReembed_WhenLessonIsDraft() {
         // Draft lessons should remain non-embedded even when content fields change.
@@ -385,9 +355,6 @@ class LessonServiceImplTest {
         verify(supabaseAdminRestClient, times(1)).patchList(eq("lessons"), anyString(), any(), any());
     }
 
-    /**
-     * Verifies that update lesson should skip reembed when skip embedding is true.
-     */
     @Test
     void updateLesson_ShouldSkipReembed_WhenSkipEmbeddingIsTrue() {
         // The skip flag should suppress re-embedding even when published content changes.
@@ -421,9 +388,6 @@ class LessonServiceImplTest {
         verify(supabaseAdminRestClient, times(1)).patchList(eq("lessons"), anyString(), any(), any());
     }
 
-    /**
-     * Verifies that find relevant lesson should concatenate top klesson content when query provided.
-     */
     @Test
     void findRelevantLesson_ShouldConcatenateTopKLessonContent_WhenQueryProvided() {
         // Test that top K lesson content is concatenated into a single string
@@ -444,9 +408,6 @@ class LessonServiceImplTest {
         assertTrue(result.contains("Prata"));
     }
 
-    /**
-     * Verifies that get lesson feed should apply defaults and trim to page size when no request provided.
-     */
     @Test
     void getLessonFeed_ShouldApplyDefaultsAndTrimToPageSize_WhenNoRequestProvided() {
         // Test that getLessonFeed applies default pagination and trims results to page size
@@ -486,9 +447,6 @@ class LessonServiceImplTest {
         assertTrue(query.contains("order=completion_count.desc,created_at.desc"));
     }
 
-    /**
-     * Verifies that get lesson feed should apply all filters and boundaries when request has filters.
-     */
     @Test
     void getLessonFeed_ShouldApplyAllFiltersAndBoundaries_WhenRequestHasFilters() {
         // Test that getLessonFeed applies difficulty, duration, ordering, and title filters
@@ -500,7 +458,7 @@ class LessonServiceImplTest {
         //act
         lessonService.getLessonFeed(
             ACCESS_TOKEN,
-            new com.rotiprata.api.lesson.request.LessonFeedRequest(
+            new com.rotiprata.api.lesson.dto.LessonFeedRequest(
                 "  roti,(prata) ",
                 "advanced",
                 "medium",
@@ -522,9 +480,6 @@ class LessonServiceImplTest {
         assertTrue(query.contains("prata")); // relaxed to avoid wildcard/escape mismatch
     }
 
-    /**
-     * Verifies that get lesson feed should reject invalid filters when filters invalid.
-     */
     @Test
     void getLessonFeed_ShouldRejectInvalidFilters_WhenFiltersInvalid() {
         // Test that getLessonFeed throws BAD_REQUEST for invalid difficulty, duration, or sort
@@ -533,7 +488,7 @@ class LessonServiceImplTest {
             ResponseStatusException.class,
             () -> lessonService.getLessonFeed(
                 ACCESS_TOKEN,
-                new com.rotiprata.api.lesson.request.LessonFeedRequest(
+                new com.rotiprata.api.lesson.dto.LessonFeedRequest(
                     null,
                     "expert",
                     "all",
@@ -549,7 +504,7 @@ class LessonServiceImplTest {
             ResponseStatusException.class,
             () -> lessonService.getLessonFeed(
                 ACCESS_TOKEN,
-                new com.rotiprata.api.lesson.request.LessonFeedRequest(
+                new com.rotiprata.api.lesson.dto.LessonFeedRequest(
                     null,
                     "all",
                     "very-long",
@@ -565,7 +520,7 @@ class LessonServiceImplTest {
             ResponseStatusException.class,
             () -> lessonService.getLessonFeed(
                 ACCESS_TOKEN,
-                new com.rotiprata.api.lesson.request.LessonFeedRequest(
+                new com.rotiprata.api.lesson.dto.LessonFeedRequest(
                     null,
                     "all",
                     "all",
@@ -578,9 +533,6 @@ class LessonServiceImplTest {
         assertEquals(HttpStatus.BAD_REQUEST, invalidSort.getStatusCode());
     }
 
-    /**
-     * Verifies that search lessons should return all lessons when query is blank.
-     */
     @Test
     void searchLessons_ShouldReturnAllLessons_WhenQueryIsBlank() {
         // Test that searchLessons returns all lessons if query is blank
@@ -598,9 +550,6 @@ class LessonServiceImplTest {
         verify(supabaseRestClient).getList(eq("lessons"), anyString(), eq(ACCESS_TOKEN), any());
     }
 
-    /**
-     * Verifies that search lessons should escape unsafe characters when query has special chars.
-     */
     @Test
     void searchLessons_ShouldEscapeUnsafeCharacters_WhenQueryHasSpecialChars() {
         // Test that searchLessons escapes unsafe characters like parentheses
@@ -618,9 +567,6 @@ class LessonServiceImplTest {
         assertTrue(queryCaptor.getValue().contains("prata")); // relaxed assertion
     }
 
-    /**
-     * Verifies that get lesson by id should throw not found when missing.
-     */
     @Test
     void getLessonById_ShouldThrowNotFound_WhenMissing() {
         // Test that getLessonById throws NOT_FOUND if lesson does not exist
@@ -637,9 +583,6 @@ class LessonServiceImplTest {
         assertEquals(HttpStatus.NOT_FOUND, ex.getStatusCode());
     }
 
-    /**
-     * Verifies that get lessons should require access token when missing.
-     */
     @Test
     void getLessons_ShouldRequireAccessToken_WhenMissing() {
         // Test that getLessons throws UNAUTHORIZED if access token is missing
@@ -651,9 +594,6 @@ class LessonServiceImplTest {
         assertEquals(HttpStatus.UNAUTHORIZED, ex.getStatusCode());
     }
 
-    /**
-     * Verifies that get user lesson progress should keep highest progress per lesson when multiple records exist.
-     */
     @Test
     void getUserLessonProgress_ShouldKeepHighestProgressPerLesson_WhenMultipleRecordsExist() {
         // Test that getUserLessonProgress keeps the highest progress for duplicate lessons
@@ -674,9 +614,6 @@ class LessonServiceImplTest {
         assertEquals(80, progress.get(lessonId.toString()));
     }
 
-    /**
-     * Verifies that get user stats should compute counts and default streak when data present.
-     */
     @Test
     void getUserStats_ShouldComputeCountsAndDefaultStreak_WhenDataPresent() {
         // Test that getUserStats computes lessons, concepts, streak, and hours correctly
@@ -703,9 +640,6 @@ class LessonServiceImplTest {
         assertEquals(0, stats.get("hoursLearned"));
     }
 
-    /**
-     * Verifies that save lesson should ignore unique violation when conflict occurs.
-     */
     @Test
     void saveLesson_ShouldIgnoreUniqueViolation_WhenConflictOccurs() {
         // Test that saveLesson ignores unique constraint violations
@@ -723,9 +657,6 @@ class LessonServiceImplTest {
         verify(supabaseRestClient).postList(eq("saved_content"), any(), eq(ACCESS_TOKEN), any());
     }
 
-    /**
-     * Verifies that save lesson should rethrow non unique violation when other error occurs.
-     */
     @Test
     void saveLesson_ShouldRethrowNonUniqueViolation_WhenOtherErrorOccurs() {
         // Test that saveLesson rethrows exceptions other than unique constraint violations
@@ -745,9 +676,6 @@ class LessonServiceImplTest {
         assertEquals(HttpStatus.BAD_REQUEST, ex.getStatusCode());
     }
 
-    /**
-     * Creates the lesson payload.
-     */
     private Map<String, Object> createLessonPayload(boolean publish) {
         Map<String, Object> payload = new LinkedHashMap<>();
         payload.put("title", "Roti Basics");
@@ -770,9 +698,6 @@ class LessonServiceImplTest {
         return payload;
     }
 
-    /**
-     * Completes the lesson.
-     */
     private Map<String, Object> completeLesson(boolean published) {
         Map<String, Object> lesson = new LinkedHashMap<>();
         lesson.put("id", lessonId.toString());
@@ -796,9 +721,6 @@ class LessonServiceImplTest {
         return lesson;
     }
 
-    /**
-     * Handles valid question.
-     */
     private Map<String, Object> validQuestion() {
         Map<String, Object> question = new LinkedHashMap<>();
         question.put("question_type", "multiple_choice");
@@ -810,9 +732,6 @@ class LessonServiceImplTest {
         return question;
     }
 
-    /**
-     * Handles full content sections.
-     */
     private List<Map<String, Object>> fullContentSections(String prefix) {
         return List.of(
             textSection(LessonFlowConstants.SECTION_INTRO, prefix + " intro"),
@@ -824,9 +743,6 @@ class LessonServiceImplTest {
         );
     }
 
-    /**
-     * Handles text section.
-     */
     private Map<String, Object> textSection(String sectionKey, String text) {
         Map<String, Object> block = new LinkedHashMap<>();
         block.put("blockType", "text");
@@ -838,9 +754,6 @@ class LessonServiceImplTest {
         return section;
     }
 
-    /**
-     * Checks whether embedding patch.
-     */
     private boolean isEmbeddingPatch(Object body) {
         return body instanceof Map<?, ?> map && map.containsKey("embedding");
     }

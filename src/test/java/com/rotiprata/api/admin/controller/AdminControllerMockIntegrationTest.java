@@ -21,9 +21,6 @@ import static io.restassured.module.mockmvc.RestAssuredMockMvc.given;
 import static org.mockito.Mockito.verify;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.jwt;
 
-/**
- * Covers admin controller scenarios and regression behavior for the current branch changes.
- */
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.MOCK)
 @AutoConfigureMockMvc
 @DisplayName("AdminController Mock Integration Tests")
@@ -48,9 +45,6 @@ class AdminControllerMockIntegrationTest {
 
     private MockMvcRequestSpecification auth;
 
-    /**
-     * Builds the shared test fixture and default mock behavior for each scenario.
-     */
     @BeforeEach
     void setUp() {
         RestAssuredMockMvc.mockMvc(mockMvc);
@@ -61,9 +55,6 @@ class AdminControllerMockIntegrationTest {
             ));
     }
 
-    /**
-     * Verifies that review content should approve when status approved.
-     */
     @Test
     void reviewContent_ShouldApprove_WhenStatusApproved() {
         auth
@@ -79,9 +70,6 @@ class AdminControllerMockIntegrationTest {
         verify(adminService).approveContent(ADMIN_ID, CONTENT_ID, ACCESS_TOKEN);
     }
 
-    /**
-     * Verifies that review content should reject when status rejected.
-     */
     @Test
     void reviewContent_ShouldReject_WhenStatusRejected() {
         auth
@@ -97,9 +85,6 @@ class AdminControllerMockIntegrationTest {
         verify(adminService).rejectContent(ADMIN_ID, CONTENT_ID, "Needs revision", ACCESS_TOKEN);
     }
 
-    /**
-     * Verifies that resolve flag should resolve when status resolved.
-     */
     @Test
     void resolveFlag_ShouldResolve_WhenStatusResolved() {
         auth
@@ -115,9 +100,6 @@ class AdminControllerMockIntegrationTest {
         verify(adminService).resolveFlag(ADMIN_ID, FLAG_ID, ACCESS_TOKEN);
     }
 
-    /**
-     * Verifies that resolve flag should take down when status taken down.
-     */
     @Test
     void resolveFlag_ShouldTakeDown_WhenStatusTakenDown() {
         auth
@@ -133,9 +115,6 @@ class AdminControllerMockIntegrationTest {
         verify(adminService).takeDownFlag(ADMIN_ID, FLAG_ID, "Policy violation", ACCESS_TOKEN);
     }
 
-    /**
-     * Verifies that legacy moderation aliases should still work.
-     */
     @Test
     void legacyModerationAliases_ShouldStillWork() {
         auth

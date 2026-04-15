@@ -1,6 +1,6 @@
 package com.rotiprata.api.category.service;
 
-import com.rotiprata.api.category.model.Category;
+import com.rotiprata.api.category.domain.Category;
 import java.util.List;
 
 public interface CategoryService {

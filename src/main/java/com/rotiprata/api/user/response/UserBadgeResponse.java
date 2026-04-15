@@ -1,4 +1,4 @@
-package com.rotiprata.api.user.response;
+package com.rotiprata.api.user.dto;
 
 import java.time.OffsetDateTime;
 import java.util.UUID;
