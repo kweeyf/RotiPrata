@@ -28,8 +28,11 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+/**
+ * Covers content draft service scenarios and regression behavior for the current branch changes.
+ */
 @ExtendWith(MockitoExtension.class)
-class ContentDraftServiceTest {
+class ContentDraftServiceImplTest {
 
     @Mock
     private SupabaseAdminRestClient adminRestClient;
@@ -41,7 +44,7 @@ class ContentDraftServiceTest {
     @SuppressWarnings("unchecked")
     void startUpload_ShouldThrowBadRequest_WhenContentTypeIsText() {
         //arrange
-        ContentDraftService service = new ContentDraftService(adminRestClient, mediaProcessingService);
+        ContentDraftService service = new ContentDraftServiceImpl(adminRestClient, mediaProcessingService);
         MockMultipartFile file = new MockMultipartFile("file", "v.mp4", "video/mp4", new byte[] {1, 2});
 
         //act
@@ -60,7 +63,7 @@ class ContentDraftServiceTest {
     @SuppressWarnings("unchecked")
     void startUpload_ShouldReturnProcessingResponse_WhenValidUploadIsProvided() {
         //arrange
-        ContentDraftService service = new ContentDraftService(adminRestClient, mediaProcessingService);
+        ContentDraftService service = new ContentDraftServiceImpl(adminRestClient, mediaProcessingService);
         UUID userId = UUID.randomUUID();
         UUID contentId = UUID.randomUUID();
         Content created = new Content();
@@ -85,7 +88,7 @@ class ContentDraftServiceTest {
     @SuppressWarnings("unchecked")
     void updateDraft_ShouldThrowConflict_WhenContentAlreadySubmitted() {
         //arrange
-        ContentDraftService service = new ContentDraftService(adminRestClient, mediaProcessingService);
+        ContentDraftService service = new ContentDraftServiceImpl(adminRestClient, mediaProcessingService);
         UUID userId = UUID.randomUUID();
         UUID contentId = UUID.randomUUID();
         Content existing = new Content();
@@ -109,7 +112,7 @@ class ContentDraftServiceTest {
     @SuppressWarnings("unchecked")
     void submit_ShouldThrowConflict_WhenMediaIsNotReady() {
         //arrange
-        ContentDraftService service = new ContentDraftService(adminRestClient, mediaProcessingService);
+        ContentDraftService service = new ContentDraftServiceImpl(adminRestClient, mediaProcessingService);
         UUID userId = UUID.randomUUID();
         UUID contentId = UUID.randomUUID();
         Content existing = new Content();
@@ -136,7 +139,7 @@ class ContentDraftServiceTest {
     @SuppressWarnings("unchecked")
     void getMediaStatus_ShouldReturnStatusPayload_WhenContentAndMediaExist() {
         //arrange
-        ContentDraftService service = new ContentDraftService(adminRestClient, mediaProcessingService);
+        ContentDraftService service = new ContentDraftServiceImpl(adminRestClient, mediaProcessingService);
         UUID userId = UUID.randomUUID();
         UUID contentId = UUID.randomUUID();
         Content existing = new Content();
@@ -160,3 +163,5 @@ class ContentDraftServiceTest {
         verify(adminRestClient).getList(eq("content_media"), any(), any(TypeReference.class));
     }
 }
+
+

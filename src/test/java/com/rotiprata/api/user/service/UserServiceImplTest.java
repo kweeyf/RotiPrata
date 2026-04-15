@@ -43,8 +43,8 @@ import org.springframework.web.server.ResponseStatusException;
  * Covers user service scenarios and regression behavior for the current branch changes.
  */
 @ExtendWith(MockitoExtension.class)
-@DisplayName("UserService tests")
-class UserServiceTest {
+@DisplayName("UserServiceImpl tests")
+class UserServiceImplTest {
 
     @Mock
     private SupabaseRestClient supabaseRestClient;
@@ -59,7 +59,7 @@ class UserServiceTest {
      */
     @BeforeEach
     void setUp() {
-        service = new UserService(supabaseRestClient, supabaseAdminRestClient);
+        service = new UserServiceImpl(supabaseRestClient, supabaseAdminRestClient);
     }
 
     /**
@@ -659,3 +659,6 @@ class UserServiceTest {
         assertEquals("user", captor.getValue().get("display_name"));
     }
 }
+
+
+

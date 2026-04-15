@@ -26,8 +26,11 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+/**
+ * Covers recommendation signal service scenarios and regression behavior for the current branch changes.
+ */
 @ExtendWith(MockitoExtension.class)
-class RecommendationSignalServiceTest {
+class RecommendationSignalServiceImplTest {
 
     @Mock
     private SupabaseAdminRestClient supabaseAdminRestClient;
@@ -35,9 +38,12 @@ class RecommendationSignalServiceTest {
     private RecommendationSignalService recommendationSignalService;
     private UUID userId;
 
+    /**
+     * Builds the shared test fixture and default mock behavior for each scenario.
+     */
     @BeforeEach
     void setUp() {
-        recommendationSignalService = new RecommendationSignalService(supabaseAdminRestClient);
+        recommendationSignalService = new RecommendationSignalServiceImpl(supabaseAdminRestClient);
         userId = UUID.randomUUID();
     }
 
@@ -407,3 +413,5 @@ class RecommendationSignalServiceTest {
         verify(supabaseAdminRestClient).getList(eq("content_tags"), anyString(), any(TypeReference.class));
     }
 }
+
+

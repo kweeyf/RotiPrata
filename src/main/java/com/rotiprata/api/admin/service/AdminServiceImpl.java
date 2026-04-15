@@ -83,28 +83,6 @@ public class AdminServiceImpl implements AdminService {
         SupabaseAdminRestClient supabaseAdminRestClient,
         ContentCreatorEnrichmentService contentCreatorEnrichmentService,
         ContentService contentService,
-        UserService userService,
-        AdminLoggingService adminLoggingService
-    ) {
-        this(
-            supabaseAdminClient,
-            supabaseAdminRestClient,
-            contentCreatorEnrichmentService,
-            contentService,
-            new ContentLessonLinkService(supabaseAdminRestClient),
-            userService,
-            adminLoggingService
-        );
-    }
-
-    /**
-     * Creates a admin service impl instance with its collaborators.
-     */
-    public AdminServiceImpl(
-        SupabaseAdminClient supabaseAdminClient,
-        SupabaseAdminRestClient supabaseAdminRestClient,
-        ContentCreatorEnrichmentService contentCreatorEnrichmentService,
-        ContentService contentService,
         ContentLessonLinkService contentLessonLinkService,
         UserService userService,
         AdminLoggingService adminLoggingService

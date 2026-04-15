@@ -2,6 +2,7 @@ package com.rotiprata.api.admin.service;
 
 import com.rotiprata.api.content.service.ContentCreatorEnrichmentService;
 import com.rotiprata.api.content.service.ContentService;
+import com.rotiprata.api.feed.service.ContentLessonLinkService;
 import com.rotiprata.api.user.service.UserService;
 import com.rotiprata.security.authorization.AppRole;
 import com.rotiprata.infrastructure.supabase.SupabaseAdminClient;
@@ -61,6 +62,9 @@ class AdminServiceImplTest {
     private ContentService contentService;
 
     @Mock
+    private ContentLessonLinkService contentLessonLinkService;
+
+    @Mock
     private UserService userService;
 
     @Mock
@@ -80,6 +84,7 @@ class AdminServiceImplTest {
             supabaseAdminRestClient,
             contentCreatorEnrichmentService,
             contentService,
+            contentLessonLinkService,
             userService,
             adminLoggingService
         );

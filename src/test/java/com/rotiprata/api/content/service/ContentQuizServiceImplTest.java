@@ -31,7 +31,7 @@ import static org.mockito.Mockito.when;
  * Covers content quiz service scenarios and regression behavior for the current branch changes.
  */
 @ExtendWith(MockitoExtension.class)
-class ContentQuizServiceTest {
+class ContentQuizServiceImplTest {
 
     @Mock
     private SupabaseRestClient supabaseRestClient;
@@ -48,7 +48,7 @@ class ContentQuizServiceTest {
     @SuppressWarnings("unchecked")
     void getContentQuiz_ShouldThrowUnauthorized_WhenAccessTokenMissing() {
         //arrange
-        ContentQuizService service = new ContentQuizService(supabaseRestClient, supabaseAdminRestClient, userService);
+        ContentQuizService service = new ContentQuizServiceImpl(supabaseRestClient, supabaseAdminRestClient, userService);
 
         //act
         ResponseStatusException ex = assertThrows(ResponseStatusException.class,
@@ -69,7 +69,7 @@ class ContentQuizServiceTest {
     @SuppressWarnings("unchecked")
     void submitContentQuiz_ShouldReturnScoredResult_WhenAnswersAreSubmitted() {
         //arrange
-        ContentQuizService service = new ContentQuizService(supabaseRestClient, supabaseAdminRestClient, userService);
+        ContentQuizService service = new ContentQuizServiceImpl(supabaseRestClient, supabaseAdminRestClient, userService);
         UUID userId = UUID.randomUUID();
         UUID contentId = UUID.randomUUID();
         when(supabaseAdminRestClient.getList(eq("content"), any(), any(TypeReference.class)))
@@ -100,7 +100,7 @@ class ContentQuizServiceTest {
     @SuppressWarnings("unchecked")
     void getAdminContentQuiz_ShouldThrowForbidden_WhenUserIsNotAdmin() {
         //arrange
-        ContentQuizService service = new ContentQuizService(supabaseRestClient, supabaseAdminRestClient, userService);
+        ContentQuizService service = new ContentQuizServiceImpl(supabaseRestClient, supabaseAdminRestClient, userService);
         UUID userId = UUID.randomUUID();
         when(userService.getRoles(userId, "token")).thenReturn(List.of(AppRole.USER));
 
@@ -123,7 +123,7 @@ class ContentQuizServiceTest {
     @SuppressWarnings("unchecked")
     void replaceAdminContentQuiz_ShouldReplaceQuestions_WhenValidAdminRequestProvided() {
         //arrange
-        ContentQuizService service = new ContentQuizService(supabaseRestClient, supabaseAdminRestClient, userService);
+        ContentQuizService service = new ContentQuizServiceImpl(supabaseRestClient, supabaseAdminRestClient, userService);
         UUID adminId = UUID.randomUUID();
         UUID contentId = UUID.randomUUID();
         when(userService.getRoles(adminId, "token")).thenReturn(List.of(AppRole.ADMIN));
@@ -155,3 +155,5 @@ class ContentQuizServiceTest {
         verify(supabaseAdminRestClient).postList(eq("quiz_questions"), any(), any(TypeReference.class));
     }
 }
+
+

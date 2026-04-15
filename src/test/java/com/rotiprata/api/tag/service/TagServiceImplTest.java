@@ -35,7 +35,7 @@ class TagServiceImplTest {
      */
     @BeforeEach
     void setUp() {
-        tagService = new TagService(adminRestClient);
+        tagService = new TagServiceImpl(adminRestClient);
     }
 
     /**
@@ -217,3 +217,4 @@ class TagServiceImplTest {
         verify(adminRestClient, times(1)).getList(eq("content_tags"), anyString(), any(TypeReference.class));
     }
 }
+

@@ -18,7 +18,7 @@ import static org.mockito.Mockito.when;
  * Covers feed service scenarios and regression behavior for the current branch changes.
  */
 @ExtendWith(MockitoExtension.class)
-class FeedServiceTest {
+class FeedServiceImplTest {
 
     @Mock
     private RecommendationService recommendationService;
@@ -30,7 +30,7 @@ class FeedServiceTest {
      */
     @BeforeEach
     void setUp() {
-        feedService = new FeedService(recommendationService);
+        feedService = new FeedServiceImpl(recommendationService);
     }
 
     /**
@@ -54,3 +54,5 @@ class FeedServiceTest {
         verify(recommendationService).getFeed(userId, "token", "cursor-0", 10);
     }
 }
+
+

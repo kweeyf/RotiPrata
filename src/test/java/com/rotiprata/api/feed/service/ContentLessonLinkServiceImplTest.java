@@ -24,17 +24,23 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+/**
+ * Covers content lesson link service scenarios and regression behavior for the current branch changes.
+ */
 @ExtendWith(MockitoExtension.class)
-class ContentLessonLinkServiceTest {
+class ContentLessonLinkServiceImplTest {
 
     @Mock
     private SupabaseAdminRestClient supabaseAdminRestClient;
 
     private ContentLessonLinkService service;
 
+    /**
+     * Builds the shared test fixture and default mock behavior for each scenario.
+     */
     @BeforeEach
     void setUp() {
-        service = new ContentLessonLinkService(supabaseAdminRestClient);
+        service = new ContentLessonLinkServiceImpl(supabaseAdminRestClient);
     }
 
     /** Verifies null and empty content-id inputs short-circuit without any database calls. */
@@ -359,3 +365,5 @@ class ContentLessonLinkServiceTest {
         verify(supabaseAdminRestClient, never()).postList(eq("lesson_concepts"), any(), any(TypeReference.class));
     }
 }
+
+

@@ -50,7 +50,7 @@ import static org.mockito.Mockito.when;
  * Covers recommendation service scenarios and regression behavior for the current branch changes.
  */
 @ExtendWith(MockitoExtension.class)
-class RecommendationServiceTest {
+class RecommendationServiceImplTest {
 
     @Mock
     private SupabaseAdminRestClient supabaseAdminRestClient;
@@ -75,7 +75,7 @@ class RecommendationServiceTest {
      */
     @BeforeEach
     void setUp() {
-        recommendationService = new RecommendationService(
+        recommendationService = new RecommendationServiceImpl(
             supabaseAdminRestClient,
             contentEngagementService,
             contentCreatorEnrichmentService,
@@ -1143,11 +1143,11 @@ class RecommendationServiceTest {
      */
     private int invokeCompareToCursor(ScoredRecommendation item, double score, OffsetDateTime createdAt, UUID contentId) {
         try {
-            Class<?> cursorClass = Class.forName("com.rotiprata.api.feed.service.RecommendationService$RecommendationCursor");
+            Class<?> cursorClass = Class.forName("com.rotiprata.api.feed.service.RecommendationServiceImpl$RecommendationCursor");
             Constructor<?> constructor = cursorClass.getDeclaredConstructor(double.class, OffsetDateTime.class, UUID.class);
             constructor.setAccessible(true);
             Object cursor = constructor.newInstance(score, createdAt, contentId);
-            Method method = RecommendationService.class.getDeclaredMethod("compareToCursor", ScoredRecommendation.class, cursorClass);
+            Method method = RecommendationServiceImpl.class.getDeclaredMethod("compareToCursor", ScoredRecommendation.class, cursorClass);
             method.setAccessible(true);
             return (Integer) method.invoke(recommendationService, item, cursor);
         } catch (ReflectiveOperationException ex) {
@@ -1160,7 +1160,7 @@ class RecommendationServiceTest {
      */
     private UUID invokeParseUuid(Object value) {
         try {
-            Method method = RecommendationService.class.getDeclaredMethod("parseUuid", Object.class);
+            Method method = RecommendationServiceImpl.class.getDeclaredMethod("parseUuid", Object.class);
             method.setAccessible(true);
             return (UUID) method.invoke(recommendationService, value);
         } catch (ReflectiveOperationException ex) {
@@ -1211,3 +1211,7 @@ class RecommendationServiceTest {
         return candidate;
     }
 }
+
+
+
+

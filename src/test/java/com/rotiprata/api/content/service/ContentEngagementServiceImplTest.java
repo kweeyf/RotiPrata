@@ -22,8 +22,11 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+/**
+ * Covers content engagement service scenarios and regression behavior for the current branch changes.
+ */
 @ExtendWith(MockitoExtension.class)
-class ContentEngagementServiceTest {
+class ContentEngagementServiceImplTest {
 
     @Mock
     private SupabaseRestClient supabaseRestClient;
@@ -33,7 +36,7 @@ class ContentEngagementServiceTest {
     @SuppressWarnings("unchecked")
     void decorateItemsWithUserEngagement_ShouldSetDefaultFlags_WhenMissingAuthContext() {
         //arrange
-        ContentEngagementService service = new ContentEngagementService(supabaseRestClient);
+        ContentEngagementService service = new ContentEngagementServiceImpl(supabaseRestClient);
         Map<String, Object> item = new LinkedHashMap<>();
         item.put("id", UUID.randomUUID().toString());
         List<Map<String, Object>> items = new ArrayList<>(List.of(item));
@@ -55,7 +58,7 @@ class ContentEngagementServiceTest {
     @SuppressWarnings("unchecked")
     void decorateItemsWithUserEngagement_ShouldReturnSameItems_WhenNoContentIdsExist() {
         //arrange
-        ContentEngagementService service = new ContentEngagementService(supabaseRestClient);
+        ContentEngagementService service = new ContentEngagementServiceImpl(supabaseRestClient);
         List<Map<String, Object>> items = new ArrayList<>(List.of(new LinkedHashMap<>()));
 
         //act
@@ -73,7 +76,7 @@ class ContentEngagementServiceTest {
     @SuppressWarnings("unchecked")
     void decorateItemsWithUserEngagement_ShouldDecorateFlags_WhenLikesAndSavesExist() {
         //arrange
-        ContentEngagementService service = new ContentEngagementService(supabaseRestClient);
+        ContentEngagementService service = new ContentEngagementServiceImpl(supabaseRestClient);
         UUID userId = UUID.randomUUID();
         String contentA = UUID.randomUUID().toString();
         String contentB = UUID.randomUUID().toString();
@@ -103,3 +106,5 @@ class ContentEngagementServiceTest {
         verify(supabaseRestClient).getList(eq("content_saves"), any(), eq("token"), any(TypeReference.class));
     }
 }
+
+
