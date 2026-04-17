@@ -44,12 +44,7 @@ Set `ALLOWED_ORIGINS` only when the frontend is on a different origin; same-orig
 
 Start the app:
 ```bash
-docker compose up --build
-```
-
-Run in the background:
-```bash
-docker compose up --build -d
+docker compose build --no-cache && docker compose up
 ```
 
 Open the app:
@@ -157,7 +152,3 @@ Frontend runs on `http://localhost:5173` and proxies `/api` to `http://localhost
   - `false`: always call backend
   - `auto`: try backend first, fall back to dummy data
   - For real auth flows, set this to `false`.
-
-## Next steps
-- Implement real API controllers/services in the backend for the endpoints declared in `frontend/src/lib/api.ts`.
-- Replace dummy data as real endpoints come online.
