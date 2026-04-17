@@ -44,12 +44,7 @@ Set `ALLOWED_ORIGINS` only when the frontend is on a different origin; same-orig
 
 Start the app:
 ```bash
-docker compose up --build
-```
-
-Run in the background:
-```bash
-docker compose up --build -d
+docker compose build --no-cache && docker compose up
 ```
 
 Open the app:
